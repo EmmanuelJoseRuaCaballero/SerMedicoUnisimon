@@ -10,7 +10,7 @@ export default function Index() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email: username, password });
+    
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login/", {
@@ -19,7 +19,7 @@ export default function Index() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username, 
+          username,
           password,
         }),
       });
@@ -28,6 +28,7 @@ export default function Index() {
 
       if (response.ok) {
         alert("Login exitoso 🚀");
+        console.log("Login attempt:", { email: username, password });
         navigate("/dashboard");
       } else {
         alert(data.error);

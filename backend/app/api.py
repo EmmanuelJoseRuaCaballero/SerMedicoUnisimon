@@ -1,7 +1,9 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Curso, Login, Profesor
+from .serializers import CursoSerializer, EstudianteSerializer, LoginSerializer, ProfesorSerializer
+from rest_framework.views import APIView # type: ignore
+from rest_framework.response import Response # type: ignore
+from rest_framework import status # type: ignore
+from .models import Curso, Estudiante, Login, Profesor
+from rest_framework.permissions import IsAuthenticated # type: ignore
 
 class LoginView(APIView):
     def post(self, request):
@@ -40,15 +42,9 @@ class RegisterView(APIView):
 
 class GetUsersView(APIView):
     def get(self, request):
-        logins = []
-        for login in Login.objects.all():
-            logins.append({
-                "id": login.id,
-                "username": login.username,
-                "password": login.password,
-                "rol": login.rol
-            })
-        return Response(logins, status=status.HTTP_200_OK)
+        usuarios = Login.objects.all()
+        serializer = LoginSerializer(usuarios, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 class GetProfesoresView(APIView):
     def get(self, request):
@@ -58,17 +54,19 @@ class GetProfesoresView(APIView):
                 "id": profesor.id,
                 "nombre": profesor.nombre,
                 "apellido": profesor.apellido,
-                "rol": profesor.login.rol
+                "rol": profesor.login.rol,
+                "login_id": profesor.login.id
             })
         return Response(profesores, status=status.HTTP_200_OK)
     
     def post(self, request):
         nombre = request.data.get("nombre") 
         apellido = request.data.get("apellido")
+        login_id = request.data.get("login_id")
 
         if nombre and apellido: 
-            profesor = Profesor(nombre=nombre, apellido=apellido, login_id=request.data.get("login_id")) 
-        profesor.save() 
+            profesor = Profesor(nombre=nombre, apellido=apellido, login_id=login_id) 
+        profesor.save()
         
         return Response({ 
             "message": "Profesor creado exitosamente", 
@@ -82,7 +80,8 @@ class GetCursosView(APIView):
             cursos.append({
                 "id": curso.id,
                 "nombre": curso.nombre,
-                "codigo": curso.codigo
+                "codigo": curso.codigo, 
+                "profesor": f"{curso.profesor.nombre} {curso.profesor.apellido}"
             })
         return Response(cursos, status=status.HTTP_200_OK)
     
@@ -92,8 +91,7 @@ class GetCursosView(APIView):
         profesor_id = request.data.get("profesor_id")
 
         if nombre and codigo and profesor_id: 
-            profesor = Profesor.objects.get(id=profesor_id)
-            curso = Curso(nombre=nombre, codigo=codigo, profesor=profesor) 
+            curso = Curso(nombre=nombre, codigo=codigo, profesor_id=profesor_id) 
         curso.save() 
         
         return Response({ 
@@ -101,5 +99,73 @@ class GetCursosView(APIView):
             "curso": curso.nombre }, 
         status=status.HTTP_201_CREATED)
     
+class GetUsuarioCompletoView(APIView):
+    def get(self, request, user_id):
 
+        try:
+            usuario = Login.objects.get(id=user_id)
+
+            data = {
+                "seccion_login": LoginSerializer(usuario).data,
+                "seccion_profesor": ProfesorSerializer(
+                    Profesor.objects.filter(login=usuario).first()
+                ).data if Profesor.objects.filter(login=usuario).exists() else None,
+                "seccion_cursos": CursoSerializer(
+                    Curso.objects.filter(profesor__login=usuario),
+                    many=True
+                ).data
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Login.DoesNotExist:
+            return Response(
+                {"error": "Usuario no encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class EstudianteListCreateAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        estudiantes = Estudiante.objects.all()
+        serializer = EstudianteSerializer(estudiantes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = EstudianteSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class EstudianteAPIView(APIView):
+    def get(self, request):
+        estudiantes = Estudiante.objects.all()
+        serializer = EstudianteSerializer(estudiantes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = EstudianteSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class EstudianteDetailAPIView(APIView):
+    def get(self, request, i):
+        try:
+            estudiante = Estudiante.objects.get(id=id)
+            serializer = EstudianteSerializer(estudiante)
+            return Response(serializer.data)
+
+        except Estudiante.DoesNotExist:
+            return Response(
+                {"error": "Estudiante no encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
