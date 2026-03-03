@@ -32,8 +32,6 @@ python -m venv venv
 # Activar entorno
 # Windows:
 venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
 
 # Instalar dependencias
 pip install django djangorestframework django-cors-headers psycopg2-binary
@@ -50,7 +48,14 @@ npm install
 
 # Instalar librerías adicionales
 npm install react-router-dom axios lucide-react
-npm install -D tailwindcss postcss autoprefixer
+npm install -D tailwindcss@3 postcss autoprefixer
+npm install @tanstack/react-query
+npm install @radix-ui/react-tooltip
+npm install next-themes sonner
+npm install @radix-ui/react-toast
+npm install clsx tailwind-merge
+npm install class-variance-authority
 
 # Iniciar entorno de desarrollo
 npm run dev
+```
