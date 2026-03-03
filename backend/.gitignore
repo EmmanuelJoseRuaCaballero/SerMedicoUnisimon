@@ -1,0 +1,55 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos Virtuales (Indispensable)
+venv/
+env/
+ENV/
+.env
+.venv
+
+# Base de Datos (Local)
+# Se ignora db.sqlite3 porque en producción usarás PostgreSQL
+*.sqlite3
+db.sqlite3
+
+# Archivos de configuración sensible
+.env
+.python-version
+
+# Media y Static (Archivos subidos por usuarios)
+media/
+staticfiles/
+
+# Logs
+*.log
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Documentación (si usas Sphinx)
+docs/_build/
+
+# PyCharm / VS Code / Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Django specific
+local_settings.py
+db.sqlite3-journal
