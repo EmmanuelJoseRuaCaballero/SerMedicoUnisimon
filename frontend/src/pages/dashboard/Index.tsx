@@ -10,33 +10,37 @@ export default function Index() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/login/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        alert("Login exitoso 🚀");
-        console.log("Login attempt:", { email: username, password });
-        navigate("/dashboard");
-      } else {
-        alert(data.error);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error conectando con el servidor");
+    if (response.ok) {
+
+      // Guarda TODO el usuario
+      localStorage.setItem("user", JSON.stringify(data));
+
+      alert("Login exitoso 🚀");
+
+      navigate("/dashboard");
+    } else {
+      alert(data.error);
     }
+
+  } catch (error) {
+    console.error(error);
+    alert("Error conectando con el servidor");
+  }
   };
 
   return (

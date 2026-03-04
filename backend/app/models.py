@@ -1,35 +1,156 @@
 from django.db import models
 
 # Create your models here.
-class Login(models.Model):
+class Roles(models.Model):
     ROLES = (
-        ('DIC_PROGRAMA', 'Director del programa'),
-        ('COORD_PRAC', 'Coordinador de Prácticas e Internado'),
-        ('COORD_CURSO', 'Coordinador de curso'),
-        ('PROFESOR', 'Profesor'),
-        ('ESTUDIANTE', 'Estudiante'),
+        (1, 'Director del programa'),
+        (2, 'Coordinador de Prácticas e Internado'),
+        (3, 'Coordinador de curso'),
+        (4, 'Profesor'),
+        (5, 'Estudiante'),
     )
 
+    id_roles =models.IntegerField(primary_key=True, choices=ROLES)
+
+class CoordinadorPracticas(models.Model):
+    cedula = models.IntegerField(primary_key=True, unique=True)
+    nombre_1 = models.CharField(max_length=100, null=False)
+    nombre_2 = models.CharField(max_length=100, null=True)
+    apellido_1 = models.CharField(max_length=100, null=False)
+    apellido_2 = models.CharField(max_length=100, null=True)
+    correo = models.EmailField(max_length=100, unique=True)
+    telefono = models.IntegerField(unique=True)
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
+
+class CoordinadorCurso(models.Model):
+    cedula = models.IntegerField(primary_key=True, unique=True)
+    nombre_1 = models.CharField(max_length=100, null=False)
+    nombre_2 = models.CharField(max_length=100, null=True)
+    apellido_1 = models.CharField(max_length=100, null=False)
+    apellido_2 = models.CharField(max_length=100, null=True)
+    correo = models.EmailField(max_length=100, unique=True)
+    telefono = models.IntegerField(unique=True)
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    cedula = models.ForeignKey(CoordinadorPracticas, on_delete=models.CASCADE)
+
+class CursoClinico(models.Model):
+    id_curso_clinico = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+
+class Profesor(models.Model):
+    cedula_profesor = models.IntegerField(primary_key=True, unique=True)
+    nombre_1 = models.CharField(max_length=100, null=False)
+    nombre_2 = models.CharField(max_length=100, null=True)
+    apellido_1 = models.CharField(max_length=100, null=False)
+    apellido_2 = models.CharField(max_length=100, null=True)
+    correo = models.EmailField(max_length=100, unique=True)
+    telefono = models.IntegerField(unique=True)
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    cedula = models.ForeignKey(CoordinadorCurso, on_delete=models.CASCADE)
+
+class Practica(models.Model):
+    id_practica = models.AutoField(primary_key=True)
+    estado = models.BooleanField(default=False)
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    id_curso_clinico = models.ForeignKey(CursoClinico, on_delete=models.CASCADE)
+    cedula = models.ForeignKey(CoordinadorPracticas, on_delete=models.CASCADE)
+
+class CompetenciaClinica(models.Model):
+    id_comp_clinica = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField()
+    nivel_esperado = models.CharField(max_length=100)
+
+class ProcedimientoClinico(models.Model):
+    id_proce_clinico = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+    tipo = models.CharField(max_length=100)
+    id_comp_clinica = models.ForeignKey(CompetenciaClinica, on_delete=models.CASCADE)
+
+class ProcedimientoRealizado(models.Model):
+    id_proce_realizado = models.AutoField(primary_key=True)
+    tipo = models.CharField(max_length=100)
+    fecha = models.DateField()
+    id_practica = models.ForeignKey(Practica, on_delete=models.CASCADE)
+    id_proce_clinico = models.ForeignKey(ProcedimientoClinico, on_delete=models.CASCADE)
+
+class EvaluacionDocente(models.Model):
+    id_evalu_docente = models.AutoField(primary_key=True)
+    calificacion = models.FloatField()
+    nivel_dreyfus = models.CharField(max_length=100)
+    cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+    id_proce_realizado = models.ForeignKey(ProcedimientoRealizado, on_delete=models.CASCADE)
+
+class Grupo(models.Model):
+    id_grupo = models.AutoField(primary_key=True)
+    codigo_grupo = models.IntegerField(unique=True)
+    semestre = models.IntegerField()
+    cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+    id_curso_clinico = models.ForeignKey(CursoClinico, on_delete=models.CASCADE)
+    
+
+class DatosUsuario(models.Model):
+    id_user = models.AutoField(primary_key=True)
     username = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=100)
-    rol = models.CharField(max_length=100, choices=ROLES, default='ESTUDIANTE')
-
-    def __str__(self):
-        return self.username
-    
-class Profesor(models.Model):
-    nombre = models.CharField(max_length=100)
-    apellido = models.CharField(max_length=100)
-    login = models.OneToOneField(Login, on_delete=models.CASCADE)
-
-class Curso(models.Model):
-    nombre = models.CharField(max_length=100) 
-    codigo = models.IntegerField(unique=True)
-    profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+    id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
 
 class Estudiante(models.Model):
-    nombre = models.CharField(max_length=100)
-    apellido = models.CharField(max_length=100)
-    login = models.OneToOneField(Login, on_delete=models.CASCADE)
-    curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
-    profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+    cod_estudiante = models.IntegerField(primary_key=True, unique=True)
+    cedula_estu = models.IntegerField(unique=True)
+    nombre_1 = models.CharField(max_length=100, null=False)
+    nombre_2 = models.CharField(max_length=100, null=True)
+    apellido_1 = models.CharField(max_length=100, null=False)
+    apellido_2 = models.CharField(max_length=100, null=True)
+    correo = models.EmailField(max_length=100, unique=True)
+    telefono = models.IntegerField(unique=True)
+    semestre = models.IntegerField()
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField()
+    id_grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
+    id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
+
+class Reportes(models.Model):
+    id_reporte = models.AutoField(primary_key=True)
+    tipo_reporte = models.CharField(max_length=100)
+    periodo = models.CharField(max_length=100)
+    contenido = models.TextField()
+    fecha_generacion = models.DateField(auto_now_add=True)
+    cod_estudiante = models.ForeignKey(Estudiante, on_delete=models.CASCADE)
+
+class DirectorPrograma(models.Model):
+    cedula = models.IntegerField(primary_key=True, unique=True)
+    nombre_1 = models.CharField(max_length=100, null=False)
+    nombre_2 = models.CharField(max_length=100, null=True)
+    apellido_1 = models.CharField(max_length=100, null=False)
+    apellido_2 = models.CharField(max_length=100, null=True)
+    correo = models.EmailField(max_length=100, unique=True)
+    telefono = models.IntegerField(unique=True)
+    fecha_inicio = models.DateField()
+    fecha_final = models.DateField() 
+
+class Retroalimentacion(models.Model):
+    id_retroalimentacion = models.AutoField(primary_key=True)
+    texto = models.TextField()
+    cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+    id_evalu_docente = models.ForeignKey(EvaluacionDocente, on_delete=models.CASCADE)
+
+class HistorialEvaluacion(models.Model):
+    id_historial = models.AutoField(primary_key=True)
+    fecha_cambio = models.DateField(auto_now_add=True)
+    usuario_editor = models.CharField(max_length=100)
+    detalles = models.TextField()
+    id_evalu_docente = models.ForeignKey(EvaluacionDocente, on_delete=models.CASCADE)
+
+class Autoevaluacion(models.Model):
+    id_autoevaluacion = models.AutoField(primary_key=True)
+    nivel_percibido = models.CharField(max_length=100)
+    fecha = models.DateField(auto_now_add=True)
+    comentarios = models.TextField()
+    id_proce_realizado = models.ForeignKey(ProcedimientoRealizado, on_delete=models.CASCADE)
+
