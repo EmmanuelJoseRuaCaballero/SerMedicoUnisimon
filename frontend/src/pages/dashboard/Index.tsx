@@ -11,36 +11,51 @@ export default function Index() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-  try {
-    const response = await fetch("http://127.0.0.1:8000/api/login/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
+      if (response.ok) {
+        localStorage.setItem("nombre", data.nombre);
 
-      // Guarda TODO el usuario
-      localStorage.setItem("user", JSON.stringify(data));
+        // Datos Profesor
+        if (data.rol == 4) {
+          try {
+            const profesor_data = await fetch(
+              `http://127.0.0.1:8000/api/practica/${data.cedula}/`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                }
+              }
+            );
 
-      alert("Login exitoso 🚀");
-
-      navigate("/dashboard");
-    } else {
-      alert(data.error);
+            localStorage.setItem("profesor", JSON.stringify(await profesor_data.json()));
+            navigate("/dashboard");
+          } catch (error) {
+            console.error(error);
+          }
+        } else if (data.rol == 5) {
+          navigate("/dashboard");
+        }
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error conectando con el servidor");
     }
-
-  } catch (error) {
-    console.error(error);
-    alert("Error conectando con el servidor");
-  }
   };
 
   return (
