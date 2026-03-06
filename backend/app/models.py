@@ -49,11 +49,7 @@ class CoordinadorCurso(models.Model):
     fecha_final = models.DateField()
     cedula_coord_practica = models.ForeignKey(CoordinadorPracticas, on_delete=models.CASCADE)
     id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
-
-class CursoClinico(models.Model):
-    id_cur_cli = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=100)
-
+    
 class Profesor(models.Model):
     cedula_profesor = models.IntegerField(primary_key=True, unique=True)
     nombre_1 = models.CharField(max_length=100, null=False)
@@ -67,13 +63,24 @@ class Profesor(models.Model):
     cedula_coord_curso = models.ForeignKey(CoordinadorCurso, on_delete=models.CASCADE)
     id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
 
+class Grupo(models.Model):
+    id_grupo = models.AutoField(primary_key=True)
+    codigo_grupo = models.IntegerField(unique=True)
+    semestre = models.IntegerField()
+    cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
+
 class Practica(models.Model):
     id_practica = models.AutoField(primary_key=True)
     estado = models.BooleanField(default=False)
     fecha_inicio = models.DateField()
     fecha_final = models.DateField()
-    id_cur_cli = models.ForeignKey(CursoClinico, on_delete=models.CASCADE)
+    id_grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
     cedula_coord_practica = models.ForeignKey(CoordinadorPracticas, on_delete=models.CASCADE)
+
+class CursoClinico(models.Model):
+    id_cur_cli = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+    id_practica = models.ForeignKey(Practica, on_delete=models.CASCADE)
 
 class CompetenciaClinica(models.Model):
     id_comp_cli = models.AutoField(primary_key=True)
@@ -100,13 +107,6 @@ class EvaluacionDocente(models.Model):
     nivel_dreyfus = models.CharField(max_length=100)
     cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
     id_proc_real = models.ForeignKey(ProcedimientoRealizado, on_delete=models.CASCADE)
-
-class Grupo(models.Model):
-    id_grupo = models.AutoField(primary_key=True)
-    codigo_grupo = models.IntegerField(unique=True)
-    semestre = models.IntegerField()
-    cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
-    id_cur_cli = models.ForeignKey(CursoClinico, on_delete=models.CASCADE)
 
 class DatosUsuario(models.Model):
     cedula = models.IntegerField(primary_key=True, unique=True)

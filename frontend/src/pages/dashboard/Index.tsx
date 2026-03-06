@@ -11,6 +11,7 @@ export default function Index() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // API inicio de sesion
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login/", {
         method: "POST",
@@ -23,15 +24,21 @@ export default function Index() {
         }),
       });
 
+      // Guardar datos JSON
       const data = await response.json();
 
       if (response.ok) {
         localStorage.setItem("nombre", data.nombre);
 
-        // Datos Profesor
-        if (data.rol == 4) {
+        // Ingreso Director del programa
+        if (data.rol == 1) {
+          navigate("/dashboard");
+        }
+        // Ingreso Coordinador de practica
+        else if (data.rol == 2) {
           try {
-            const profesor_data = await fetch(
+            const coord_practica = await fetch(
+              // API datos de practica
               `http://127.0.0.1:8000/api/practica/${data.cedula}/`,
               {
                 method: "GET",
@@ -41,11 +48,20 @@ export default function Index() {
               }
             );
 
-            localStorage.setItem("profesor", JSON.stringify(await profesor_data.json()));
+            // Guardamos datos JSON
+            localStorage.setItem("profesor", JSON.stringify(await coord_practica.json()));
+            // Redirecionamos
             navigate("/dashboard");
           } catch (error) {
             console.error(error);
           }
+          // Ingreso Coordinador de curso
+        } else if (data.rol == 3) {
+          navigate("/dashboard");
+          // Ingreso Profesor
+        } else if (data.rol == 4) {
+          navigate("/dashboard");
+          // Ingreso Estudiante
         } else if (data.rol == 5) {
           navigate("/dashboard");
         }
