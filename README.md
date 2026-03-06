@@ -55,6 +55,11 @@ npm install next-themes sonner
 npm install @radix-ui/react-toast
 npm install clsx tailwind-merge
 npm install class-variance-authority
+npm install react-day-picker
+npm install @radix-ui/react-select
+npm install @radix-ui/react-dialog
+npm install @radix-ui/react-label
+npm install @radix-ui/react-popover
 
 # Iniciar entorno de desarrollo
 npm run dev
