@@ -39,17 +39,11 @@ export default function Index() {
           try {
             const coord_practica = await fetch(
               // API datos de practica
-              `http://127.0.0.1:8000/api/practica/${data.cedula}/`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                }
-              }
-            );
-
+              `http://127.0.0.1:8000/api/practica/${data.cedula}/`);
+            
             // Guardamos datos JSON
-            localStorage.setItem("profesor", JSON.stringify(await coord_practica.json()));
+            localStorage.setItem("cedula", data.cedula);
+            localStorage.setItem("coord_practica", JSON.stringify(await coord_practica.json()));
             // Redirecionamos
             navigate("/dashboard");
           } catch (error) {

@@ -46,3 +46,13 @@ class CoordinadorCursoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordinadorCurso
         fields = "__all__"
+
+class PracticaCursoClinicoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PracticaCursoClinico
+        fields = "__all__"
+
+class EstudiantesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Estudiante
+        fields = "__all__"

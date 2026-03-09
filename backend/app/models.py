@@ -80,7 +80,11 @@ class Practica(models.Model):
 class CursoClinico(models.Model):
     id_cur_cli = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
+
+class PracticaCursoClinico(models.Model):
+    id_prac_cli = models.AutoField(primary_key=True)
     id_practica = models.ForeignKey(Practica, on_delete=models.CASCADE)
+    id_cur_cli = models.ForeignKey(CursoClinico, on_delete=models.CASCADE)
 
 class CompetenciaClinica(models.Model):
     id_comp_cli = models.AutoField(primary_key=True)

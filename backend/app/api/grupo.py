@@ -3,15 +3,18 @@ from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 
 from ..serializers import (
-    DatosUsuarioSerializer,
+    GrupoSerializer,
 )
 
 from ..models import (
-    DatosUsuario,
+    Grupo,
 )
 
-class DatosUsuarioView(APIView):
+class GrupoView(APIView):
     def get(self, request):
-        datosusuario = DatosUsuario.objects.all()
+        grupo = Grupo.objects.all()
 
-        return Response(DatosUsuarioSerializer(datosusuario, many=True).data)
+        return Response(
+            GrupoSerializer(grupo, many=True).data, 
+            status=status.HTTP_200_OK
+        )

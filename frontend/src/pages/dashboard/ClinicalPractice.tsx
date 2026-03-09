@@ -2,25 +2,39 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import * as React from "react";
 
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-  DialogTrigger,DialogClose,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 import {
-  Popover, PopoverContent, PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 
 import { Calendar } from "@/components/ui/calendar";
 
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Practica {
   estado: boolean;
@@ -43,9 +57,18 @@ interface Grupo {
   codigo_grupo: number;
 }
 
+interface Profesores {
+  nombre_1: string;
+  apellido_1: string;
+}
+
 export default function ClinicalPractice() {
+  const cedula = localStorage.getItem("cedula");
+
   // Tarjetas
-  const coord_practica = JSON.parse(localStorage.getItem("profesor") || "[]");
+  const coord_practica = JSON.parse(
+    localStorage.getItem("coord_practica") || "[]",
+  );
   const practicas: Practica[] = coord_practica;
 
   // Selects
@@ -53,19 +76,26 @@ export default function ClinicalPractice() {
   const [clinico, setClinico] = React.useState<string>("");
   const [valoresGrupos, setValoresGrupos] = React.useState<Grupo[]>([]);
   const [grupo, setGrupo] = React.useState<string>(""); // Para poder convertilo en string a los grupos
-  const [estado, setEstado] = React.useState<string>("");
+  const [estado, setEstado] = React.useState<boolean>(false);
+  const [profesores, setProfesores] = React.useState<Profesores[]>([]);
+  const [nombreProfesor, setNombreProfesor] = React.useState<string>("");
 
   // Calendar
   const [dateInicio, setDateInicio] = React.useState<Date>();
   const [dateFinal, setDateFinal] = React.useState<Date>();
   const [openInicio, setOpenInicio] = React.useState(false);
   const [openFinal, setOpenFinal] = React.useState(false);
-
-  // Modal
-  const [open, setOpen] = React.useState(false);
+  const limpiarFormulario = () => {
+    // Limpiar fechas
+    setDateInicio(undefined);
+    setDateFinal(undefined);
+  };
+  
+  // Modal Crear
+  const [openModal, setOpenModal] = React.useState(false);
 
   // APIS
-  // API nombre clinicos
+  // API nombre clinicos "GET"
   const obtenerClinicos = async () => {
     try {
       const response = await fetch("http://127.0.0.1:8000/api/curso-clinico/");
@@ -76,7 +106,7 @@ export default function ClinicalPractice() {
     }
   };
 
-  // API grupos
+  // API grupos "GET"
   const obtenerGrupos = async () => {
     try {
       const response = await fetch("http://127.0.0.1:8000/api/grupo/");
@@ -87,10 +117,22 @@ export default function ClinicalPractice() {
     }
   };
 
+  // API Profesor "GET"
+  const obtenerProfesores = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/profesores/");
+      const data = await response.json();
+      setProfesores(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   // Llamar API
   React.useEffect(() => {
     obtenerClinicos();
     obtenerGrupos();
+    obtenerProfesores();
   }, []);
 
   // Formatear fecha
@@ -108,14 +150,33 @@ export default function ClinicalPractice() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(grupo)
-    console.log(estado);
-    console.log(clinico);
-    console.log(inicio);
-    console.log(final);
-    console.log();
 
-    setOpen(false);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/practica/${cedula}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clinico,
+            estado,
+            grupo,
+            inicio,
+            final,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        console.log("Datos enviados correctamente");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+    setOpenModal(false);
   };
 
   return (
@@ -130,43 +191,28 @@ export default function ClinicalPractice() {
               Track your clinical practice hours and experiences
             </p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={openModal}
+            onOpenChange={(value) => {
+              setOpenModal(value);
+              if (!value) {
+                limpiarFormulario();
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:opacity-90">
                 + Crear
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[520px]">
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[520px] rounded-lg">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle>Crear Práctica Clínica</DialogTitle>
                 </DialogHeader>
 
                 <div className="grid gap-5 py-4">
-                  {/* Grupo */}
-                  <div className="grid gap-2">
-                    <Label>Grupo</Label>
-
-                    <Select value={grupo}
-                      onValueChange={(value) => setGrupo(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar grupo" />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {valoresGrupos.map((grupo) => (
-                          <SelectItem
-                            key={grupo.id_grupo}
-                            value={String(grupo.id_grupo)}
-                          >
-                            {grupo.codigo_grupo}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   {/* Curso Clinico */}
                   <div className="grid gap-2">
                     <Label>Curso Clínico</Label>
@@ -190,7 +236,9 @@ export default function ClinicalPractice() {
                   <div className="grid gap-2">
                     <Label>Estado</Label>
 
-                    <Select onValueChange={(value) => setEstado(value)}>
+                    <Select
+                      onValueChange={(value) => setEstado(value === "true")}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar estado" />
                       </SelectTrigger>
@@ -198,6 +246,25 @@ export default function ClinicalPractice() {
                       <SelectContent>
                         <SelectItem value="true">Activo</SelectItem>
                         <SelectItem value="false">Finalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Grupo */}
+                  <div className="grid gap-2">
+                    <Label>Grupo</Label>
+
+                    <Select onValueChange={(value) => setGrupo(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar grupo" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {valoresGrupos.map((grupo) => (
+                          <SelectItem value={String(grupo.codigo_grupo)}>
+                            {grupo.codigo_grupo}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -215,13 +282,14 @@ export default function ClinicalPractice() {
                           <CalendarIcon className="mr-2 h-4 w-4" />
 
                           {dateInicio
-                            ? format(dateInicio, "PPP")
+                            ? format(dateInicio, "PPPP", { locale: es })
                             : "Seleccionar fecha"}
                         </Button>
                       </PopoverTrigger>
 
                       <PopoverContent className="w-auto p-0">
                         <Calendar
+                          locale={es}
                           mode="single"
                           selected={dateInicio}
                           onSelect={(date) => {
@@ -247,13 +315,14 @@ export default function ClinicalPractice() {
                           <CalendarIcon className="mr-2 h-4 w-4" />
 
                           {dateFinal
-                            ? format(dateFinal, "PPP")
+                            ? format(dateFinal, "PPPP", { locale: es })
                             : "Seleccionar fecha"}
                         </Button>
                       </PopoverTrigger>
 
                       <PopoverContent className="w-auto p-0">
                         <Calendar
+                          locale={es}
                           mode="single"
                           selected={dateFinal}
                           onSelect={(date) => {
@@ -267,7 +336,7 @@ export default function ClinicalPractice() {
                   </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                   <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
                   </DialogClose>
@@ -281,7 +350,7 @@ export default function ClinicalPractice() {
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {/* Tarjeta */}
             {practicas.map((practica: Practica) => (
-              <div className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition">
+              <div className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-slate-800">
@@ -333,9 +402,186 @@ export default function ClinicalPractice() {
 
                 {/* Footer */}
                 <div className="mt-6">
-                  <button className="w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition">
-                    Ver Detalles
-                  </button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition">
+                        Ver Detalles
+                      </Button>
+                    </DialogTrigger>
+
+                    <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[568px] max-h-[80vh] overflow-y-auto rounded-lg">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Detalles - Grupo {practica.codigo_grupo} -{" "}
+                          {practica.semestre} Semestre
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <div className="grid gap-2">
+                        {/* Curso Clinico */}
+                        <div className="flex items-center gap-2">
+                          <Label className="whitespace-nowrap">
+                            Nombre Clinico:
+                          </Label>
+
+                          <Select onValueChange={(value) => setClinico(value)}>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={practica.nombre_clinico}
+                              />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              {nombresClinico.map((nombre) => (
+                                <SelectItem value={nombre.nombre}>
+                                  {nombre.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Profesor */}
+                        <div className="flex items-center gap-2">
+                          <Label className="whitespace-nowrap">Profesor:</Label>
+
+                          <Select onValueChange={(value) => setNombreProfesor(value)}>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={practica.nombre_profesor}
+                              />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              {profesores.map((profesor) => (
+                                <SelectItem value={profesor.nombre_1}>
+                                  {profesor.nombre_1} {profesor.apellido_1}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Estudiantes */}
+
+                        <div className="flex items-center gap-2">
+                          <Label className="whitespace-nowrap">
+                            Estudiantes:
+                          </Label>
+                          <Label>Estudiante 1</Label>
+                          <Checkbox />
+                          <Label>Estudiante 2</Label>
+                          <Checkbox />
+                          <Label>Estudiante 3</Label>
+                          <Checkbox />
+                        </div>
+
+                        {/* Fecha Inicio */}
+                        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                          <Label className="whitespace-nowrap">
+                            Fecha Inicio:
+                          </Label>
+
+                          <Popover
+                            open={openInicio}
+                            onOpenChange={setOpenInicio}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="justify-start text-left font-normal w-full"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+
+                                {dateInicio
+                                  ? format(dateInicio, "PPPP", { locale: es })
+                                  : format(
+                                      parseISO(practica.fecha_inicio),
+                                      "PPPP",
+                                      {
+                                        locale: es,
+                                      },
+                                    )}
+                              </Button>
+                            </PopoverTrigger>
+
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                locale={es}
+                                mode="single"
+                                selected={dateInicio}
+                                onSelect={(date) => {
+                                  setDateInicio(date);
+                                  setOpenInicio(false);
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        {/* Fecha Final */}
+                        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                          <Label className="whitespace-nowrap">
+                            Fecha Final:
+                          </Label>
+
+                          <Popover open={openFinal} onOpenChange={setOpenFinal}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="justify-start text-left font-normal w-full"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+
+                                {dateFinal
+                                  ? format(dateFinal, "PPPP", { locale: es })
+                                  : format(
+                                      parseISO(practica.fecha_final),
+                                      "PPPP",
+                                      {
+                                        locale: es,
+                                      },
+                                    )}
+                              </Button>
+                            </PopoverTrigger>
+
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                locale={es}
+                                mode="single"
+                                selected={dateFinal}
+                                onSelect={(date) => {
+                                  setDateFinal(date);
+                                  setOpenFinal(false);
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        {/* Observacion */}
+                        <div className="flex items-center gap-2">
+                          <Label className="whitespace-nowrap">
+                            Observaciones:
+                          </Label>
+                          <Textarea
+                            id="my-textarea"
+                            placeholder="Ingresa tu texto aquí..."
+                          />
+                        </div>
+                      </div>
+
+                      <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                        <Button variant="destructive">Eliminar</Button>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button type="submit">Guardar Cambios</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             ))}
