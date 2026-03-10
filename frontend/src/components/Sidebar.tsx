@@ -13,17 +13,21 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Portfolio", href: "/portfolio", icon: BookOpen },
-  { label: "Clinical Practice", href: "/clinical-practice", icon: Stethoscope },
-  { label: "Evaluations", href: "/evaluations", icon: ClipboardList },
-  { label: "Academic Progress", href: "/academic-progress", icon: TrendingUp },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
-
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+
+  const BASE_ROUTE = localStorage.getItem("ruta");
+
+  const navItems = [
+    { label: "Dashboard", href: `${BASE_ROUTE}/dashboard`, icon: LayoutDashboard, },
+    { label: "My Portfolio", href: `${BASE_ROUTE}/portfolio`, icon: BookOpen },
+    { label: "Clinical Practice", href: `${BASE_ROUTE}/clinical-practice`, icon: Stethoscope },
+    { label: "Evaluations", href: `${BASE_ROUTE}/evaluations`, icon: ClipboardList },
+    { label: "Academic Progress", href: `${BASE_ROUTE}/academic-progress`, icon: TrendingUp },
+    { label: "Settings", href: `${BASE_ROUTE}/settings`, icon: Settings },
+  ];
+
+  window.scrollTo(0, 0);
 
   return (
     <>

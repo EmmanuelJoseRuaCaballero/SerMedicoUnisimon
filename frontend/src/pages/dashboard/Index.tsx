@@ -27,28 +27,20 @@ export default function Index() {
       // Guardar datos JSON
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok) {      
         localStorage.setItem("nombre", data.nombre);
-
         // Ingreso Director del programa
         if (data.rol == 1) {
           navigate("/dashboard");
         }
         // Ingreso Coordinador de practica
         else if (data.rol == 2) {
-          try {
-            const coord_practica = await fetch(
-              // API datos de practica
-              `http://127.0.0.1:8000/api/practica/${data.cedula}/`);
-            
+            localStorage.setItem("ruta", "/coord-prac");
             // Guardamos datos JSON
             localStorage.setItem("cedula", data.cedula);
-            localStorage.setItem("coord_practica", JSON.stringify(await coord_practica.json()));
-            // Redirecionamos
-            navigate("/dashboard");
-          } catch (error) {
-            console.error(error);
-          }
+            // Redireciona"mos
+            navigate("/coord-prac/dashboard");
+
           // Ingreso Coordinador de curso
         } else if (data.rol == 3) {
           navigate("/dashboard");
@@ -57,6 +49,7 @@ export default function Index() {
           navigate("/dashboard");
           // Ingreso Estudiante
         } else if (data.rol == 5) {
+          
           navigate("/dashboard");
         }
       } else {

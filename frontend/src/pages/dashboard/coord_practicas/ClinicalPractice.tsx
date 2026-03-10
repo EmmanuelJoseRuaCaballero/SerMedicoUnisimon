@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Practica {
+  id_practica: number;
   estado: boolean;
   fecha_inicio: string;
   fecha_final: string;
@@ -66,10 +68,7 @@ export default function ClinicalPractice() {
   const cedula = localStorage.getItem("cedula");
 
   // Tarjetas
-  const coord_practica = JSON.parse(
-    localStorage.getItem("coord_practica") || "[]",
-  );
-  const practicas: Practica[] = coord_practica;
+  const [practicas, setPracticas] = React.useState<Practica[]>([]);
 
   // Selects
   const [nombresClinico, setNombresClinico] = React.useState<Clinico[]>([]);
@@ -86,54 +85,48 @@ export default function ClinicalPractice() {
   const [openInicio, setOpenInicio] = React.useState(false);
   const [openFinal, setOpenFinal] = React.useState(false);
   const limpiarFormulario = () => {
-    // Limpiar fechas
     setDateInicio(undefined);
     setDateFinal(undefined);
+    setClinico("");
+    setGrupo("");
+    setEstado(false);
+    setNombreProfesor("");
   };
-  
+
   // Modal Crear
   const [openModal, setOpenModal] = React.useState(false);
-
+  
   // APIS
-  // API nombre clinicos "GET"
-  const obtenerClinicos = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/curso-clinico/");
-      const data = await response.json();
-      setNombresClinico(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // API grupos "GET"
-  const obtenerGrupos = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/grupo/");
-      const data = await response.json();
-      setValoresGrupos(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // API Profesor "GET"
-  const obtenerProfesores = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/profesores/");
-      const data = await response.json();
-      setProfesores(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // Llamar API
+  const fetched = React.useRef(false);
   React.useEffect(() => {
-    obtenerClinicos();
-    obtenerGrupos();
-    obtenerProfesores();
-  }, []);
+     if (fetched.current) return;
+      fetched.current = true;
+
+    const cargarDatos = async () => {
+      try {
+        const [clinicosRes, gruposRes, profesoresRes, coord_practicaRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/api/curso-clinico/"),
+          fetch("http://127.0.0.1:8000/api/grupo/"),
+          fetch("http://127.0.0.1:8000/api/profesores/"),
+          fetch(`http://127.0.0.1:8000/api/practica/${cedula}/`),
+        ]);
+                    
+        const clinicosData = await clinicosRes.json();
+        const gruposData = await gruposRes.json();
+        const profesoresData = await profesoresRes.json();
+        const coord_practica = await coord_practicaRes.json();
+
+        setNombresClinico(clinicosData);
+        setValoresGrupos(gruposData);
+        setProfesores(profesoresData);
+        setPracticas(coord_practica);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    cargarDatos();
+  }, [cedula]);
 
   // Formatear fecha
   const formatDate = (date: Date | undefined) => {
@@ -144,12 +137,12 @@ export default function ClinicalPractice() {
     return `${year}-${month}-${day}`;
   };
 
-  // Guardar la fecha formateada
-  const inicio = formatDate(dateInicio);
-  const final = formatDate(dateFinal);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guardar la fecha formateada
+    const inicio = formatDate(dateInicio);
+    const final = formatDate(dateFinal);
 
     try {
       const response = await fetch(
@@ -168,15 +161,14 @@ export default function ClinicalPractice() {
           }),
         },
       );
-
       if (response.ok) {
         console.log("Datos enviados correctamente");
       }
     } catch (error) {
       console.error(error);
     }
-
     setOpenModal(false);
+    window.location.reload();
   };
 
   return (
@@ -210,6 +202,8 @@ export default function ClinicalPractice() {
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle>Crear Práctica Clínica</DialogTitle>
+
+                  <DialogDescription></DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-5 py-4">
@@ -224,7 +218,7 @@ export default function ClinicalPractice() {
 
                       <SelectContent>
                         {nombresClinico.map((nombre) => (
-                          <SelectItem value={nombre.nombre}>
+                          <SelectItem key={nombre.id} value={nombre.nombre}>
                             {nombre.nombre}
                           </SelectItem>
                         ))}
@@ -261,7 +255,10 @@ export default function ClinicalPractice() {
 
                       <SelectContent>
                         {valoresGrupos.map((grupo) => (
-                          <SelectItem value={String(grupo.codigo_grupo)}>
+                          <SelectItem
+                            key={grupo.id_grupo}
+                            value={String(grupo.codigo_grupo)}
+                          >
                             {grupo.codigo_grupo}
                           </SelectItem>
                         ))}
@@ -288,6 +285,7 @@ export default function ClinicalPractice() {
                       </PopoverTrigger>
 
                       <PopoverContent className="w-auto p-0">
+                        
                         <Calendar
                           locale={es}
                           mode="single"
@@ -296,6 +294,9 @@ export default function ClinicalPractice() {
                             setDateInicio(date);
                             setOpenInicio(false);
                           }}
+                          disabled={(date) =>
+                            dateFinal ? date > dateFinal : false
+                          }
                           initialFocus
                         />
                       </PopoverContent>
@@ -306,7 +307,10 @@ export default function ClinicalPractice() {
                   <div className="grid gap-2">
                     <Label>Fecha Final</Label>
 
-                    <Popover open={openFinal} onOpenChange={setOpenFinal}>
+                    <Popover
+                      open={dateInicio ? openFinal : false}
+                      onOpenChange={setOpenFinal}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -314,9 +318,11 @@ export default function ClinicalPractice() {
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
 
-                          {dateFinal
-                            ? format(dateFinal, "PPPP", { locale: es })
-                            : "Seleccionar fecha"}
+                          {!dateInicio
+                            ? "Primero selecciona fecha inicio"
+                            : dateFinal
+                              ? format(dateFinal, "PPPP", { locale: es })
+                              : "Seleccionar fecha"}
                         </Button>
                       </PopoverTrigger>
 
@@ -329,6 +335,9 @@ export default function ClinicalPractice() {
                             setDateFinal(date);
                             setOpenFinal(false);
                           }}
+                          disabled={(date) =>
+                            dateInicio ? date < dateInicio : false
+                          }
                           initialFocus
                         />
                       </PopoverContent>
@@ -340,7 +349,12 @@ export default function ClinicalPractice() {
                   <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
                   </DialogClose>
-                  <Button type="submit">Guardar Práctica</Button>
+                  <Button
+                    type="submit"
+                    disabled={!clinico || !grupo || !dateInicio || !dateFinal}
+                  >
+                    Guardar Práctica
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -350,7 +364,7 @@ export default function ClinicalPractice() {
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {/* Tarjeta */}
             {practicas.map((practica: Practica) => (
-              <div className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition flex flex-col">
+              <div key={practica.id_practica} className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-slate-800">
@@ -358,11 +372,10 @@ export default function ClinicalPractice() {
                   </h2>
 
                   <span
-                    className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
-                      practica.estado
+                    className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${practica.estado
                         ? "bg-green-100 text-green-700"
                         : "bg-red-100 text-red-600"
-                    }`}
+                      }`}
                   >
                     {practica.estado ? "Activo" : "Finalizado"}
                   </span>
@@ -402,7 +415,13 @@ export default function ClinicalPractice() {
 
                 {/* Footer */}
                 <div className="mt-6">
-                  <Dialog>
+                  <Dialog
+                    onOpenChange={(value) => {
+                      if (!value) {
+                        limpiarFormulario();
+                      }
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button className="w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition">
                         Ver Detalles
@@ -415,6 +434,7 @@ export default function ClinicalPractice() {
                           Detalles - Grupo {practica.codigo_grupo} -{" "}
                           {practica.semestre} Semestre
                         </DialogTitle>
+                        <DialogDescription></DialogDescription>
                       </DialogHeader>
 
                       <div className="grid gap-2">
@@ -433,7 +453,10 @@ export default function ClinicalPractice() {
 
                             <SelectContent>
                               {nombresClinico.map((nombre) => (
-                                <SelectItem value={nombre.nombre}>
+                                <SelectItem
+                                  key={nombre.id}
+                                  value={nombre.nombre}
+                                >
                                   {nombre.nombre}
                                 </SelectItem>
                               ))}
@@ -445,7 +468,9 @@ export default function ClinicalPractice() {
                         <div className="flex items-center gap-2">
                           <Label className="whitespace-nowrap">Profesor:</Label>
 
-                          <Select onValueChange={(value) => setNombreProfesor(value)}>
+                          <Select
+                            onValueChange={(value) => setNombreProfesor(value)}
+                          >
                             <SelectTrigger>
                               <SelectValue
                                 placeholder={practica.nombre_profesor}
@@ -454,7 +479,10 @@ export default function ClinicalPractice() {
 
                             <SelectContent>
                               {profesores.map((profesor) => (
-                                <SelectItem value={profesor.nombre_1}>
+                                <SelectItem
+                                  key={`${profesor.nombre_1}-${profesor.apellido_1}`}
+                                  value={profesor.nombre_1}
+                                >
                                   {profesor.nombre_1} {profesor.apellido_1}
                                 </SelectItem>
                               ))}
@@ -496,12 +524,10 @@ export default function ClinicalPractice() {
                                 {dateInicio
                                   ? format(dateInicio, "PPPP", { locale: es })
                                   : format(
-                                      parseISO(practica.fecha_inicio),
-                                      "PPPP",
-                                      {
-                                        locale: es,
-                                      },
-                                    )}
+                                    parseISO(practica.fecha_inicio),
+                                    "PPPP",
+                                    { locale: es },
+                                  )}
                               </Button>
                             </PopoverTrigger>
 
@@ -509,11 +535,20 @@ export default function ClinicalPractice() {
                               <Calendar
                                 locale={es}
                                 mode="single"
-                                selected={dateInicio}
+                                selected={
+                                  dateInicio ?? parseISO(practica.fecha_inicio)
+                                }
+                                defaultMonth={
+                                  dateInicio ?? parseISO(practica.fecha_inicio)
+                                }
                                 onSelect={(date) => {
                                   setDateInicio(date);
                                   setOpenInicio(false);
                                 }}
+                                disabled={(date) =>
+                                  date >
+                                  (dateFinal ?? parseISO(practica.fecha_final))
+                                }
                                 initialFocus
                               />
                             </PopoverContent>
@@ -537,12 +572,12 @@ export default function ClinicalPractice() {
                                 {dateFinal
                                   ? format(dateFinal, "PPPP", { locale: es })
                                   : format(
-                                      parseISO(practica.fecha_final),
-                                      "PPPP",
-                                      {
-                                        locale: es,
-                                      },
-                                    )}
+                                    parseISO(practica.fecha_final),
+                                    "PPPP",
+                                    {
+                                      locale: es,
+                                    },
+                                  )}
                               </Button>
                             </PopoverTrigger>
 
@@ -550,11 +585,21 @@ export default function ClinicalPractice() {
                               <Calendar
                                 locale={es}
                                 mode="single"
-                                selected={dateFinal}
+                                selected={
+                                  dateFinal ?? parseISO(practica.fecha_final)
+                                }
+                                defaultMonth={
+                                  dateFinal ?? parseISO(practica.fecha_final)
+                                }
                                 onSelect={(date) => {
                                   setDateFinal(date);
                                   setOpenFinal(false);
                                 }}
+                                disabled={(date) =>
+                                  date <
+                                  (dateInicio ??
+                                    parseISO(practica.fecha_inicio))
+                                }
                                 initialFocus
                               />
                             </PopoverContent>

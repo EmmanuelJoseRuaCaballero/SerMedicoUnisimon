@@ -27,6 +27,7 @@ class PracticaView(APIView):
                 
                 for p_c in practica_clinicos: 
                     data.append({
+                        "id_practica": practica.id_practica,
                         "nombre_clinico": p_c.id_cur_cli.nombre,
                         "estado": practica.estado,
                         "nombre_profesor": f"{profesor.nombre_1} {profesor.apellido_1}",
