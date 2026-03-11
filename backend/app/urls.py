@@ -6,7 +6,8 @@ from app.api.practica import PracticaView
 from app.api.estudiantes import EstudiantesView
 from app.api.cursoclinico import CursoClinicoView
 from app.api.grupo import GrupoView
-from app.api.profesores import ProfesoresView 
+from app.api.profesores import ProfesoresView
+from app.api.coord_curso import CoordinadorCursosView 
 
 urlpatterns = [
     # Login
@@ -22,5 +23,7 @@ urlpatterns = [
     path("api/estudiantes/<int:codigo_grupo>/", EstudiantesView.as_view(), name="estudiantes"),
     # Profesor
     path("api/profesores/", ProfesoresView.as_view(), name="profesores"),
-
+    # Coordinador Curso
+    path("api/coord-curso/", CoordinadorCursosView.as_view(), name="coord-curso"),
+    
 ]

@@ -1,5 +1,13 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import * as React from "react";
+import { CalendarIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   Dialog,
@@ -11,9 +19,6 @@ import {
   DialogClose,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 import {
   Select,
@@ -29,39 +34,53 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { Calendar } from "@/components/ui/calendar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-import { CalendarIcon } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import { toastSuccess, toastError } from "@/hooks/toast-sonner";
 
-interface Practica {
-  id_practica: number;
-  estado: boolean;
-  fecha_inicio: string;
-  fecha_final: string;
-  codigo_grupo: number;
-  semestre: number;
-  nombre_profesor: string;
-  nombre_clinico: string;
+interface Estudiante {
+  nombre_estudiante: string;
 }
 
-interface Clinico {
-  id: number;
+interface Practica {
+  nombre_clinico: string;
+  estado: boolean;
+  nombre_profesor: string;
+  nombre_coord_curso: string;
+  semestre: number;
+  codigo_grupo: number;
+  fecha_inicio: string;
+  fecha_final: string;
+  estudiantes_nombres: Estudiante[];
+}
+
+interface CursoClinico {
   nombre: string;
-  id_practica: number;
 }
 
 interface Grupo {
-  id_grupo: number;
   codigo_grupo: number;
 }
 
-interface Profesores {
+interface Profesor {
   nombre_1: string;
+  nombre_2: string;
   apellido_1: string;
+  apellido_2: string;
+}
+
+interface CoordinadorCurso {
+  nombre_1: string;
+  nombre_2: string;
+  apellido_1: string;
+  apellido_2: string;
 }
 
 export default function ClinicalPractice() {
@@ -71,15 +90,22 @@ export default function ClinicalPractice() {
   const [practicas, setPracticas] = React.useState<Practica[]>([]);
 
   // Selects
-  const [nombresClinico, setNombresClinico] = React.useState<Clinico[]>([]);
-  const [clinico, setClinico] = React.useState<string>("");
-  const [valoresGrupos, setValoresGrupos] = React.useState<Grupo[]>([]);
-  const [grupo, setGrupo] = React.useState<string>(""); // Para poder convertilo en string a los grupos
+  // Curso Clinico
+  const [cursoClinico, setCursoClinico] = React.useState<CursoClinico[]>([]);
+  const [nombreClinico, setNombreClinico] = React.useState<string>("");
+  //Grupo
+  const [grupo, setGrupo] = React.useState<Grupo[]>([]);
+  const [codigoGrupo, setCodigoGrupo] = React.useState<string>(""); // Para poder convertilo en string a los grupos
+  // Estado
   const [estado, setEstado] = React.useState<boolean>(false);
-  const [profesores, setProfesores] = React.useState<Profesores[]>([]);
+  // Profesor
+  const [profesor, setProfesor] = React.useState<Profesor[]>([]);
   const [nombreProfesor, setNombreProfesor] = React.useState<string>("");
+  // Coordinador Curso
+  const [coordCurso, setCoordCurso] = React.useState<CoordinadorCurso[]>([]);
+  const [nombreCoordCurso, setNombreCoordCurso] = React.useState<string>("");
 
-  // Calendar
+  // Calendario
   const [dateInicio, setDateInicio] = React.useState<Date>();
   const [dateFinal, setDateFinal] = React.useState<Date>();
   const [openInicio, setOpenInicio] = React.useState(false);
@@ -87,39 +113,49 @@ export default function ClinicalPractice() {
   const limpiarFormulario = () => {
     setDateInicio(undefined);
     setDateFinal(undefined);
-    setClinico("");
-    setGrupo("");
+    setNombreClinico("");
+    setCodigoGrupo("");
     setEstado(false);
     setNombreProfesor("");
+    setNombreCoordCurso("");
   };
 
   // Modal Crear
   const [openModal, setOpenModal] = React.useState(false);
-  
+
   // APIS
   const fetched = React.useRef(false);
   React.useEffect(() => {
-     if (fetched.current) return;
-      fetched.current = true;
+    if (fetched.current) return;
+    fetched.current = true;
 
     const cargarDatos = async () => {
       try {
-        const [clinicosRes, gruposRes, profesoresRes, coord_practicaRes] = await Promise.all([
+        const [
+          clinicosRes,
+          gruposRes,
+          profesoresRes,
+          coord_practicaRes,
+          coord_cursoRes,
+        ] = await Promise.all([
           fetch("http://127.0.0.1:8000/api/curso-clinico/"),
           fetch("http://127.0.0.1:8000/api/grupo/"),
           fetch("http://127.0.0.1:8000/api/profesores/"),
           fetch(`http://127.0.0.1:8000/api/practica/${cedula}/`),
+          fetch(`http://127.0.0.1:8000/api/coord-curso/`),
         ]);
-                    
+
         const clinicosData = await clinicosRes.json();
         const gruposData = await gruposRes.json();
         const profesoresData = await profesoresRes.json();
         const coord_practica = await coord_practicaRes.json();
+        const coord_cursos = await coord_cursoRes.json();
 
-        setNombresClinico(clinicosData);
-        setValoresGrupos(gruposData);
-        setProfesores(profesoresData);
+        setCursoClinico(clinicosData);
+        setGrupo(gruposData);
+        setProfesor(profesoresData);
         setPracticas(coord_practica);
+        setCoordCurso(coord_cursos);
       } catch (error) {
         console.error(error);
       }
@@ -137,12 +173,23 @@ export default function ClinicalPractice() {
     return `${year}-${month}-${day}`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log({
+      nombreClinico,
+      nombreProfesor,
+      nombreCoordCurso,
+      dateInicio,
+      dateFinal,
+    });
+  };
+
+  const handleSubmitCrear = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Guardar la fecha formateada
-    const inicio = formatDate(dateInicio);
-    const final = formatDate(dateFinal);
+    const fechaInicio = formatDate(dateInicio);
+    const fechaFinal = formatDate(dateFinal);
 
     try {
       const response = await fetch(
@@ -153,22 +200,28 @@ export default function ClinicalPractice() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            clinico,
+            nombreClinico,
             estado,
-            grupo,
-            inicio,
-            final,
+            codigoGrupo,
+            fechaInicio,
+            fechaFinal,
           }),
         },
       );
+      const data = await response.json();
+      console.log(response.status)
       if (response.ok) {
-        console.log("Datos enviados correctamente");
+        toastSuccess("Practica creada");
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        setOpenModal(false);
+        window.location.reload();
+      } else if(response.status == 400) {
+        toastError(data.message);         
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error(error);
+      toastError("Error de conexión con el servidor");
     }
-    setOpenModal(false);
-    window.location.reload();
   };
 
   return (
@@ -199,7 +252,7 @@ export default function ClinicalPractice() {
             </DialogTrigger>
 
             <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[520px] rounded-lg">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmitCrear}>
                 <DialogHeader>
                   <DialogTitle>Crear Práctica Clínica</DialogTitle>
 
@@ -211,14 +264,14 @@ export default function ClinicalPractice() {
                   <div className="grid gap-2">
                     <Label>Curso Clínico</Label>
 
-                    <Select onValueChange={(value) => setClinico(value)}>
+                    <Select onValueChange={(value) => setNombreClinico(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar curso clínico" />
                       </SelectTrigger>
 
                       <SelectContent>
-                        {nombresClinico.map((nombre) => (
-                          <SelectItem key={nombre.id} value={nombre.nombre}>
+                        {cursoClinico.map((nombre, index) => (
+                          <SelectItem key={index} value={nombre.nombre}>
                             {nombre.nombre}
                           </SelectItem>
                         ))}
@@ -248,15 +301,15 @@ export default function ClinicalPractice() {
                   <div className="grid gap-2">
                     <Label>Grupo</Label>
 
-                    <Select onValueChange={(value) => setGrupo(value)}>
+                    <Select onValueChange={(value) => setCodigoGrupo(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar grupo" />
                       </SelectTrigger>
 
                       <SelectContent>
-                        {valoresGrupos.map((grupo) => (
+                        {grupo.map((grupo, index) => (
                           <SelectItem
-                            key={grupo.id_grupo}
+                            key={index}
                             value={String(grupo.codigo_grupo)}
                           >
                             {grupo.codigo_grupo}
@@ -285,7 +338,6 @@ export default function ClinicalPractice() {
                       </PopoverTrigger>
 
                       <PopoverContent className="w-auto p-0">
-                        
                         <Calendar
                           locale={es}
                           mode="single"
@@ -351,7 +403,12 @@ export default function ClinicalPractice() {
                   </DialogClose>
                   <Button
                     type="submit"
-                    disabled={!clinico || !grupo || !dateInicio || !dateFinal}
+                    disabled={
+                      !nombreClinico ||
+                      !codigoGrupo ||
+                      !dateInicio ||
+                      !dateFinal
+                    }
                   >
                     Guardar Práctica
                   </Button>
@@ -361,21 +418,25 @@ export default function ClinicalPractice() {
           </Dialog>
         </div>
         <div className="bg-card rounded-xl p-8 shadow-sm border border-border">
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Tarjeta */}
-            {practicas.map((practica: Practica) => (
-              <div key={practica.id_practica} className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition flex flex-col">
+            {practicas.map((practica: Practica, index) => (
+              <div
+                key={index}
+                className="rounded-xl bg-white shadow-md border border-gray-200 p-6 hover:shadow-lg transition flex flex-col h-full"
+              >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 gap-2">
                   <h2 className="text-lg font-semibold text-slate-800">
                     {practica.nombre_clinico}
                   </h2>
 
                   <span
-                    className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${practica.estado
+                    className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
+                      practica.estado
                         ? "bg-green-100 text-green-700"
                         : "bg-red-100 text-red-600"
-                      }`}
+                    }`}
                   >
                     {practica.estado ? "Activo" : "Finalizado"}
                   </span>
@@ -384,33 +445,28 @@ export default function ClinicalPractice() {
                 <div className="border-t border-gray-200 mb-4" />
 
                 {/* Info */}
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Profesor</span>
-                    <span>{practica.nombre_profesor}</span>
-                  </div>
+                <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
+                  <span className="font-medium text-gray-700">Profesor</span>
+                  <span>{practica.nombre_profesor}</span>
 
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Grupo</span>
-                    <span>{practica.codigo_grupo}</span>
-                  </div>
+                  <span className="font-medium text-gray-700 ">
+                    Coordinador Curso
+                  </span>
+                  <span>{practica.nombre_coord_curso}</span>
 
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Semestre</span>
-                    <span>{practica.semestre}</span>
-                  </div>
+                  <span className="font-medium text-gray-700">Grupo</span>
+                  <span>{practica.codigo_grupo}</span>
 
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Inicio</span>
-                    <span>{practica.fecha_inicio}</span>
-                  </div>
+                  <span className="font-medium text-gray-700">Semestre</span>
+                  <span>{practica.semestre}</span>
 
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">
-                      Finalización
-                    </span>
-                    <span>{practica.fecha_final}</span>
-                  </div>
+                  <span className="font-medium text-gray-700">Inicio</span>
+                  <span>{practica.fecha_inicio}</span>
+
+                  <span className="font-medium text-gray-700">
+                    Finalización
+                  </span>
+                  <span>{practica.fecha_final}</span>
                 </div>
 
                 {/* Footer */}
@@ -429,202 +485,261 @@ export default function ClinicalPractice() {
                     </DialogTrigger>
 
                     <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[568px] max-h-[80vh] overflow-y-auto rounded-lg">
-                      <DialogHeader>
-                        <DialogTitle>
-                          Detalles - Grupo {practica.codigo_grupo} -{" "}
-                          {practica.semestre} Semestre
-                        </DialogTitle>
-                        <DialogDescription></DialogDescription>
-                      </DialogHeader>
+                      <form onSubmit={handleSubmitEdit}>
+                        <DialogHeader>
+                          <DialogTitle>
+                            Detalles - Grupo {practica.codigo_grupo} -{" "}
+                            {practica.semestre} Semestre
+                          </DialogTitle>
+                          <DialogDescription></DialogDescription>
+                        </DialogHeader>
 
-                      <div className="grid gap-2">
-                        {/* Curso Clinico */}
-                        <div className="flex items-center gap-2">
-                          <Label className="whitespace-nowrap">
-                            Nombre Clinico:
-                          </Label>
+                        <div className="grid gap-2">
+                          {/* Curso Clinico */}
+                          <div className="flex items-center gap-2">
+                            <Label className="whitespace-nowrap">
+                              Nombre Clinico:
+                            </Label>
 
-                          <Select onValueChange={(value) => setClinico(value)}>
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={practica.nombre_clinico}
-                              />
-                            </SelectTrigger>
+                            <Select
+                              onValueChange={(value) => setNombreClinico(value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={practica.nombre_clinico}
+                                />
+                              </SelectTrigger>
 
-                            <SelectContent>
-                              {nombresClinico.map((nombre) => (
-                                <SelectItem
-                                  key={nombre.id}
-                                  value={nombre.nombre}
-                                >
-                                  {nombre.nombre}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                              <SelectContent>
+                                {cursoClinico.map((nombre, index) => (
+                                  <SelectItem key={index} value={nombre.nombre}>
+                                    {nombre.nombre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        {/* Profesor */}
-                        <div className="flex items-center gap-2">
-                          <Label className="whitespace-nowrap">Profesor:</Label>
+                          {/* Coordinador Curso */}
+                          <div className="flex items-center gap-2">
+                            <Label className="whitespace-nowrap">
+                              Coordinador Curso:
+                            </Label>
 
-                          <Select
-                            onValueChange={(value) => setNombreProfesor(value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={practica.nombre_profesor}
-                              />
-                            </SelectTrigger>
+                            <Select
+                              onValueChange={(value) =>
+                                setNombreCoordCurso(value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={practica.nombre_coord_curso}
+                                />
+                              </SelectTrigger>
 
-                            <SelectContent>
-                              {profesores.map((profesor) => (
-                                <SelectItem
-                                  key={`${profesor.nombre_1}-${profesor.apellido_1}`}
-                                  value={profesor.nombre_1}
-                                >
-                                  {profesor.nombre_1} {profesor.apellido_1}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                              <SelectContent>
+                                {coordCurso.map((coord, index) => (
+                                  <SelectItem
+                                    key={index}
+                                    value={`${coord.nombre_1} ${coord.nombre_2} ${coord.apellido_1} ${coord.apellido_2}`}
+                                  >
+                                    {coord.nombre_1} {coord.nombre_2}{" "}
+                                    {coord.apellido_1} {coord.apellido_2}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        {/* Estudiantes */}
+                          {/* Profesor */}
+                          <div className="flex items-center gap-2">
+                            <Label className="whitespace-nowrap">
+                              Profesor:
+                            </Label>
 
-                        <div className="flex items-center gap-2">
-                          <Label className="whitespace-nowrap">
-                            Estudiantes:
-                          </Label>
-                          <Label>Estudiante 1</Label>
-                          <Checkbox />
-                          <Label>Estudiante 2</Label>
-                          <Checkbox />
-                          <Label>Estudiante 3</Label>
-                          <Checkbox />
-                        </div>
+                            <Select
+                              onValueChange={(value) =>
+                                setNombreProfesor(value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={practica.nombre_profesor}
+                                />
+                              </SelectTrigger>
 
-                        {/* Fecha Inicio */}
-                        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-                          <Label className="whitespace-nowrap">
-                            Fecha Inicio:
-                          </Label>
+                              <SelectContent>
+                                {profesor.map((profesor, index) => (
+                                  <SelectItem
+                                    key={index}
+                                    value={`${profesor.nombre_1} ${profesor.nombre_2} ${profesor.apellido_1} ${profesor.apellido_2}`}
+                                  >
+                                    {profesor.nombre_1} {profesor.nombre_2}{" "}
+                                    {profesor.apellido_1} {profesor.apellido_2}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                          <Popover
-                            open={openInicio}
-                            onOpenChange={setOpenInicio}
-                          >
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="justify-start text-left font-normal w-full"
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
+                          {/* Estudiantes */}
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-full overflow-auto">
+                              <Label className="whitespace-nowrap">
+                                Lista Estudiantes:
+                              </Label>
+                              <Table className="w-full text-sm text-left border border-gray-200 rounded-lg">
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="bg-gray-100 text-gray-700">
+                                      Nombre
+                                    </TableHead>
+                                  </TableRow>
+                                </TableHeader>
 
-                                {dateInicio
-                                  ? format(dateInicio, "PPPP", { locale: es })
-                                  : format(
-                                    parseISO(practica.fecha_inicio),
-                                    "PPPP",
-                                    { locale: es },
+                                <TableBody>
+                                  {practica.estudiantes_nombres.map(
+                                    (nombre, index) => (
+                                      <TableRow key={index}>
+                                        <TableCell className="px-3 py-2 border-b">
+                                          {nombre.nombre_estudiante}
+                                        </TableCell>
+                                      </TableRow>
+                                    ),
                                   )}
-                              </Button>
-                            </PopoverTrigger>
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
 
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                locale={es}
-                                mode="single"
-                                selected={
-                                  dateInicio ?? parseISO(practica.fecha_inicio)
-                                }
-                                defaultMonth={
-                                  dateInicio ?? parseISO(practica.fecha_inicio)
-                                }
-                                onSelect={(date) => {
-                                  setDateInicio(date);
-                                  setOpenInicio(false);
-                                }}
-                                disabled={(date) =>
-                                  date >
-                                  (dateFinal ?? parseISO(practica.fecha_final))
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          {/* Fecha Inicio */}
+                          <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                            <Label className="whitespace-nowrap">
+                              Fecha Inicio:
+                            </Label>
+
+                            <Popover
+                              open={openInicio}
+                              onOpenChange={setOpenInicio}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="justify-start text-left font-normal w-full"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+
+                                  {dateInicio
+                                    ? format(dateInicio, "PPPP", { locale: es })
+                                    : format(
+                                        parseISO(practica.fecha_inicio),
+                                        "PPPP",
+                                        { locale: es },
+                                      )}
+                                </Button>
+                              </PopoverTrigger>
+
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  locale={es}
+                                  mode="single"
+                                  selected={
+                                    dateInicio ??
+                                    parseISO(practica.fecha_inicio)
+                                  }
+                                  defaultMonth={
+                                    dateInicio ??
+                                    parseISO(practica.fecha_inicio)
+                                  }
+                                  onSelect={(date) => {
+                                    setDateInicio(date);
+                                    setOpenInicio(false);
+                                  }}
+                                  disabled={(date) =>
+                                    date >
+                                    (dateFinal ??
+                                      parseISO(practica.fecha_final))
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* Fecha Final */}
+                          <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                            <Label className="whitespace-nowrap">
+                              Fecha Final:
+                            </Label>
+
+                            <Popover
+                              open={openFinal}
+                              onOpenChange={setOpenFinal}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="justify-start text-left font-normal w-full"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+
+                                  {dateFinal
+                                    ? format(dateFinal, "PPPP", { locale: es })
+                                    : format(
+                                        parseISO(practica.fecha_final),
+                                        "PPPP",
+                                        {
+                                          locale: es,
+                                        },
+                                      )}
+                                </Button>
+                              </PopoverTrigger>
+
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  locale={es}
+                                  mode="single"
+                                  selected={
+                                    dateFinal ?? parseISO(practica.fecha_final)
+                                  }
+                                  defaultMonth={
+                                    dateFinal ?? parseISO(practica.fecha_final)
+                                  }
+                                  onSelect={(date) => {
+                                    setDateFinal(date);
+                                    setOpenFinal(false);
+                                  }}
+                                  disabled={(date) =>
+                                    date <
+                                    (dateInicio ??
+                                      parseISO(practica.fecha_inicio))
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* Observacion */}
+                          <div className="flex items-center gap-2">
+                            <Label className="whitespace-nowrap">
+                              Observaciones:
+                            </Label>
+                            <Textarea
+                              id="my-textarea"
+                              placeholder="Ingresa tu texto aquí..."
+                            />
+                          </div>
                         </div>
 
-                        {/* Fecha Final */}
-                        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-                          <Label className="whitespace-nowrap">
-                            Fecha Final:
-                          </Label>
-
-                          <Popover open={openFinal} onOpenChange={setOpenFinal}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="justify-start text-left font-normal w-full"
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-
-                                {dateFinal
-                                  ? format(dateFinal, "PPPP", { locale: es })
-                                  : format(
-                                    parseISO(practica.fecha_final),
-                                    "PPPP",
-                                    {
-                                      locale: es,
-                                    },
-                                  )}
-                              </Button>
-                            </PopoverTrigger>
-
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                locale={es}
-                                mode="single"
-                                selected={
-                                  dateFinal ?? parseISO(practica.fecha_final)
-                                }
-                                defaultMonth={
-                                  dateFinal ?? parseISO(practica.fecha_final)
-                                }
-                                onSelect={(date) => {
-                                  setDateFinal(date);
-                                  setOpenFinal(false);
-                                }}
-                                disabled={(date) =>
-                                  date <
-                                  (dateInicio ??
-                                    parseISO(practica.fecha_inicio))
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-
-                        {/* Observacion */}
-                        <div className="flex items-center gap-2">
-                          <Label className="whitespace-nowrap">
-                            Observaciones:
-                          </Label>
-                          <Textarea
-                            id="my-textarea"
-                            placeholder="Ingresa tu texto aquí..."
-                          />
-                        </div>
-                      </div>
-
-                      <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                        <Button variant="destructive">Eliminar</Button>
-                        <DialogClose asChild>
-                          <Button variant="outline">Cancelar</Button>
-                        </DialogClose>
-                        <Button type="submit">Guardar Cambios</Button>
-                      </DialogFooter>
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                          <Button variant="destructive">Eliminar</Button>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                          </DialogClose>
+                          <Button type="submit">Guardar Cambios</Button>
+                        </DialogFooter>
+                      </form>
                     </DialogContent>
                   </Dialog>
                 </div>
