@@ -49,6 +49,7 @@ npm install
 # Instalar librerías adicionales
 npm install react-router-dom axios lucide-react
 npm install -D tailwindcss@3 postcss autoprefixer
+npm install tailwindcss-animate
 npm install @tanstack/react-query
 npm install @radix-ui/react-tooltip
 npm install next-themes sonner
