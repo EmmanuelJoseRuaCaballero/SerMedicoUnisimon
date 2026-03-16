@@ -62,6 +62,8 @@ npm install @radix-ui/react-dialog
 npm install @radix-ui/react-label
 npm install @radix-ui/react-popover
 npm install @radix-ui/react-checkbox
+npm install @radix-ui/react-dropdown-menu
+npm install @radix-ui/react-accordion
 
 # Iniciar entorno de desarrollo
 npm run dev
