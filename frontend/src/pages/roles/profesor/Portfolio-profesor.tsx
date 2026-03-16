@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 
-export default function Portfolio() {
+export default function Portfolio_profesor() {
   return (
     <DashboardLayout>
       <div className="space-y-6">

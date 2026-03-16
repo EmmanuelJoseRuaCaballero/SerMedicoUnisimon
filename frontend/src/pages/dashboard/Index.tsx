@@ -38,7 +38,7 @@ export default function Index() {
             localStorage.setItem("ruta", "/coord-prac");
             // Guardamos datos JSON
             localStorage.setItem("cedula", data.cedula);
-            // Redireciona"mos
+            // Redirecionamos
             navigate("/coord-prac/dashboard");
 
           // Ingreso Coordinador de curso
@@ -46,11 +46,17 @@ export default function Index() {
           navigate("/dashboard");
           // Ingreso Profesor
         } else if (data.rol == 4) {
-          navigate("/dashboard");
+          localStorage.setItem("ruta", "/profesor");
+          // Guardamos datos JSON
+          localStorage.setItem("cedula", data.cedula);
+          navigate("/profesor/dashboard");
           // Ingreso Estudiante
         } else if (data.rol == 5) {
-          
-          navigate("/dashboard");
+          localStorage.setItem("ruta", "/estudiante");
+          // Guardamos datos JSON
+          localStorage.setItem("cedula", data.cedula);
+          // Redirecionamos
+          navigate("/estudiante/dashboard");
         }
       } else {
         alert(data.error);

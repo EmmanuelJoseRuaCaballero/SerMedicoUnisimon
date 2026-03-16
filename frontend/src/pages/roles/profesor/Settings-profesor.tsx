@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 
-export default function Settings() {
+export default function Settings_profesor() {
   return (
     <DashboardLayout>
       <div className="space-y-6">

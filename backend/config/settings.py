@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dreyfus_db',
+        'NAME': 'prueba',
         'USER': 'postgres',
         'PASSWORD': 'root',
         'HOST': 'localhost',

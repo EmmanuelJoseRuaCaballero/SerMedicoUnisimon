@@ -5,12 +5,23 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/dashboard/Index";
 import NotFound from "./pages/dashboard/NotFound";
 
-import Settings from "./pages/dashboard/coord_practicas/Settings";
-import AcademicProgress from "./pages/dashboard/coord_practicas/AcademicProgress";
-import Evaluations from "./pages/dashboard/coord_practicas/Evaluations";
-import ClinicalPractice from "./pages/dashboard/coord_practicas/ClinicalPractice";
-import Portfolio from "./pages/dashboard/coord_practicas/Portfolio";
-import Dashboard from "./pages/dashboard/coord_practicas/Dashboard";
+// Coordinador Practicas
+
+// Profesor
+import Settings_profesor from "./pages/roles/profesor/Settings-profesor";
+import AcademicProgress_profesor from "./pages/roles/profesor/AcademicProgress-profesor";
+import Evaluations_profesor from "./pages/roles/profesor/Evaluations-profesor";
+import ClinicalPractice_profesor from "./pages/roles/profesor/ClinicalPractice-profesor";
+import Portfolio_profesor from "./pages/roles/profesor/Portfolio-profesor";
+import Dashboard_profesor from "./pages/roles/profesor/Dashboard-profesor";
+
+// Estudiante
+import Settings_estudiante from "./pages/roles/estudiante/Settings-estudiante";
+import AcademicProgress_estudiante from "./pages/roles/estudiante/AcademicProgress-estudiante";
+import Evaluations_estudiante from "./pages/roles/estudiante/Evaluations-estudiante";
+import ClinicalPractice_estudiante from "./pages/roles/estudiante/ClinicalPractice-estudiante";
+import Portfolio_estudiante from "./pages/roles/estudiante/Portfolio-estudiante";
+import Dashboard_estudiante from "./pages/roles/estudiante/Dashboard-estudiante"; 
 
 import "./index.css";
 
@@ -26,17 +37,30 @@ export const App = () => (
 
           {/* Director Programa */}
 
-          {/* Coordinador Practicas */}
+          {/* Coordinador Practicas 
           <Route path="/coord-prac/dashboard" element={<Dashboard />} />
           <Route path="/coord-prac/portfolio" element={<Portfolio />} />
           <Route path="/coord-prac/clinical-practice" element={<ClinicalPractice />} />
           <Route path="/coord-prac/evaluations" element={<Evaluations />} />
           <Route path="/coord-prac/academic-progress" element={<AcademicProgress />} />
-          <Route path="/coord-prac/settings" element={<Settings />} />
+          <Route path="/coord-prac/settings" element={<Settings />} />*/}
 
           {/* Coordinador Curso */}
           {/* Profesor */}
+          <Route path="/profesor/dashboard" element={<Dashboard_profesor />} />
+          <Route path="/profesor/portfolio" element={<Portfolio_profesor />} />
+          <Route path="/profesor/clinical-practice" element={<ClinicalPractice_profesor />} />
+          <Route path="/profesor/evaluations" element={<Evaluations_profesor />} />
+          <Route path="/profesor/academic-progress" element={<AcademicProgress_profesor />} />
+          <Route path="/profesor/settings" element={<Settings_profesor />} />
+
           {/* Estudiante */}
+          <Route path="/estudiante/dashboard" element={<Dashboard_estudiante />} />
+          <Route path="/estudiante/portfolio" element={<Portfolio_estudiante />} />
+          <Route path="/estudiante/clinical-practice" element={<ClinicalPractice_estudiante />} />
+          <Route path="/estudiante/evaluations" element={<Evaluations_estudiante />} />
+          <Route path="/estudiante/academic-progress" element={<AcademicProgress_estudiante />} />
+          <Route path="/estudiante/settings" element={<Settings_estudiante />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

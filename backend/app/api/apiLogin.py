@@ -3,15 +3,15 @@ from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 
 from ..models import (
-    CoordinadorCurso, CoordinadorPracticas, DatosUsuario, 
-    DirectorPrograma, Estudiante, Profesor,
+    DatosUsuario, Estudiante, Profesor,
 )
 
 # API inicio de sesion
-# param JSON:
-# @username: string
-# @password: string
 class LoginView(APIView):
+    # "POST"
+    # param JSON:
+    # @username: string
+    # @password: string
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
@@ -23,23 +23,14 @@ class LoginView(APIView):
                 )
             
             if user.id_roles.id_roles == 5:
-                user = Estudiante.objects.get(cedula_estu=user.cedula)
+                user = Estudiante.objects.get(cedula_estudiante=user.cedula)
             elif user.id_roles.id_roles == 4:
-                user = Profesor.objects.get(cedula_profesor=user.cedula)
-            elif user.id_roles.id_roles == 3:
-                user = CoordinadorCurso.objects.get(cedula_coord_curso=user.cedula)
-            elif user.id_roles.id_roles == 2:
-                user = CoordinadorPracticas.objects.get(cedula_coord_practica=user.cedula)
-            elif user.id_roles.id_roles == 1:
-                user = DirectorPrograma.objects.get(cedula=user.cedula)      
+                user = Profesor.objects.get(cedula_profesor=user.cedula)     
             
             return Response({
                 "message": "Usuario Encontrando",
-                "cedula": getattr(user, "cedula_estu", None)
-                      or getattr(user, "cedula_profesor", None)
-                      or getattr(user, "cedula_coord_curso", None)
-                      or getattr(user, "cedula_coord_practica", None)
-                      or getattr(user, "cedula", None),
+                "cedula": getattr(user, "cedula_estudiante", None)
+                      or getattr(user, "cedula_profesor", None),
                 "nombre": f"{user.nombre_1} {user.apellido_1}",
                 "rol": user.id_roles.id_roles
             }, status=status.HTTP_200_OK) 

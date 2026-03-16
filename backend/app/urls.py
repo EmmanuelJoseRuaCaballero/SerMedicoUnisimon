@@ -1,29 +1,26 @@
 from django.urls import path
 
-from app.api.api import DatosUsuarioView
-from app.api.login import LoginView
-from app.api.practica import PracticaView
-from app.api.estudiantes import EstudiantesView
-from app.api.cursoclinico import CursoClinicoView
-from app.api.grupo import GrupoView
-from app.api.profesores import ProfesoresView
-from app.api.coord_curso import CoordinadorCursosView 
+from app.api.apiLogin import LoginView
+from app.api.apiProcedimientos import ProcedimientosView
+from app.api.apiLugar import LugarView
+from app.api.apiProfesor import ProfesorView
+from app.api.apiAutoevaluacion import AutoevaluacionEstudianteView, AutoevaluacionProfesorView
+from app.api.apiRetroalimentacion import RetroalimentacionView
+
 
 urlpatterns = [
     # Login
     path("api/login/", LoginView.as_view(), name="login"),
-    path("api/register-datos-usuario/", DatosUsuarioView.as_view(), name="register-datos-usuario"),
-    # Practica
-    path("api/practica/<int:cedula>/", PracticaView.as_view(), name="practica"),
-    # CursoClinico
-    path("api/curso-clinico/", CursoClinicoView.as_view(), name="curso-clinico"),
-    # Grupo
-    path("api/grupo/", GrupoView.as_view(), name="grupo"),
-    # Estudiantes
-    path("api/estudiantes/<int:codigo_grupo>/", EstudiantesView.as_view(), name="estudiantes"),
+    # Procedimientos
+    path("api/procedimientos/", ProcedimientosView.as_view(), name="procedimientos"),
+    # Lugar
+    path("api/lugar/", LugarView.as_view(), name="lugar"),
     # Profesor
-    path("api/profesores/", ProfesoresView.as_view(), name="profesores"),
-    # Coordinador Curso
-    path("api/coord-curso/", CoordinadorCursosView.as_view(), name="coord-curso"),
-    
+    path("api/profesor/", ProfesorView.as_view(), name="profesor"),
+    # Autoevaluacion
+    path("api/autoevaluacion/estudiante/<int:cedula>/", AutoevaluacionEstudianteView.as_view(), name="autoevaluacion_estudiante"),
+    path("api/autoevaluacion/profesor/<int:cedula>/", AutoevaluacionProfesorView.as_view(), name="autoevaluacion_profesor"),
+    # Retroalimentacion
+    path("api/retroalimentacion/", RetroalimentacionView.as_view(), name="retroalimentacion"),
+
 ]
