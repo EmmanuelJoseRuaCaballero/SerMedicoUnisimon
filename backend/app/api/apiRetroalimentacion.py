@@ -14,12 +14,12 @@ class RetroalimentacionView(APIView):
     # "POST"
     # param JSON:
     # @nivel_desempeño: int
-    # @detalles: string
+    # @observaciones: string
     # @id_autoevaluacion: int
     def post(self, request):
         try:
             nivel_desempeño = request.data.get("nivel_desempeño")
-            detalles = request.data.get("detalles")
+            observaciones = request.data.get("observaciones")
             id_autoevaluacion = request.data.get("id_autoevaluacion")  
 
             if nivel_desempeño == 1:
@@ -35,7 +35,7 @@ class RetroalimentacionView(APIView):
 
             Retroalimentacion.objects.create(
                 nivel_desempeño=desempeño,
-                detalles=detalles,
+                observaciones=observaciones,
                 id_autoevaluacion_id=id_autoevaluacion
             )
 

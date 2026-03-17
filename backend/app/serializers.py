@@ -14,11 +14,24 @@ class ProfesorSerializer(serializers.ModelSerializer):
                   "apellido_1", "apellido_2", "id_roles"]
         read_only_fields = ["cedula_profesor", "id_roles"]
 
+class BorradorAutoevaluacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BorradorAutoevaluacion
+        fields = ["id_borrador_autoevaluacion", "nombre_procedimiento", "procedimiento", "id_procedimientos", 
+                 "id_lugar", "nivel_desempeño", 
+                  "actividad", "cedula_profesor", "hora_inicio", "hora_final", "fecha", "cedula_estudiante"]
+        read_only_fields = ["id_borrador_autoevaluacion"]
+
 class EstudianteSerializer(serializers.ModelSerializer):
+    borradorautoevaluacion = BorradorAutoevaluacionSerializer(
+        source="borradorAutoevaluacion",
+        read_only=True
+    )
+
     class Meta:
         model = Estudiante
         fields = ["cedula_estudiante", "nombre_1", "nombre_2", 
-                  "apellido_1", "apellido_2", "semestre", "id_roles"]
+                  "apellido_1", "apellido_2", "semestre", "id_roles", "borradorautoevaluacion"]
         read_only_fields = ["cedula_estudiante", "id_roles"]
 
 class LugarSerializer(serializers.ModelSerializer):
@@ -45,14 +58,23 @@ class SubOpcionProcedimientosSerializer(serializers.ModelSerializer):
         fields = ["id_sub_opcion_procedimientos", "nombre_sop", "id_opcion_procedimientos"]
         read_only_fields = ["id_sub_opcion_procedimientos", "id_opcion_procedimientos"]
 
+class BorradorRetroalimentacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BorradorRetroalimentacion
+        fields = ["id_borrador_retroalimentacion", "nivel_desempeño", "observaciones", "id_retroalimentacion"]
+        read_only_fields = ["id_borrador_retroalimentacion"]
+
+
 class RetroAlimentacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Retroalimentacion
         fields = [
             "id_retroalimentacion",
             "nivel_desempeño",
-            "detalles",
-            "id_autoevaluacion"
+            "observaciones",
+            "fecha",
+            "id_autoevaluacion", 
+            "borradorretroalimentacion"
         ]
 
         read_only_fields = [
@@ -65,12 +87,17 @@ class AutoevaluacionSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    borradorretroalimentacion = BorradorRetroalimentacionSerializer(
+        source="borradorRetroalimentacion",
+        read_only=True
+    )
+
     class Meta:
         model = Autoevaluacion
         fields = [
             "id_autoevaluacion", "nivel_desempeño", "actividad_real", "actividad_simulada",
             "hora_inicio", "hora_final", "fecha", "id_lugar",
-            "cedula_profesor", "cedula_estudiante", "retroalimentacion"
+            "cedula_profesor", "cedula_estudiante", "retroalimentacion", "borradorretroalimentacion"
         ]
 
         read_only_fields = [

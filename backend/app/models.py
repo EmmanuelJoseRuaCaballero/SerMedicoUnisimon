@@ -29,6 +29,23 @@ class Estudiante(models.Model):
     semestre = models.IntegerField()
     id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
 
+class BorradorAutoevaluacion(models.Model):
+    id_borrador_autoevaluacion = models.AutoField(primary_key=True)
+    nombre_procedimiento = models.CharField(max_length=255)
+    procedimiento = models.IntegerField()
+    id_procedimientos  = models.IntegerField()
+    id_lugar = models.IntegerField()
+    nivel_desempeño = models.IntegerField()
+    actividad = models.BooleanField()
+    cedula_profesor = models.IntegerField()
+    hora_inicio = models.TimeField()
+    hora_final = models.TimeField()
+    fecha = models.DateField()
+    cedula_estudiante = models.OneToOneField (
+        Estudiante,
+        on_delete=models.CASCADE
+    )
+
 class Lugar(models.Model):
     id_lugar = models.AutoField(primary_key=True)
     nombre_lugar = models.CharField(max_length=255)
@@ -62,7 +79,17 @@ class Autoevaluacion(models.Model):
 class Retroalimentacion(models.Model):
     id_retroalimentacion = models.AutoField(primary_key=True)
     nivel_desempeño = models.CharField(max_length=100, null=False)
-    detalles = models.TextField(null=True)
+    observaciones = models.TextField(null=True)
+    fecha = models.DateField(auto_now_add=True)
+    id_autoevaluacion = models.OneToOneField(
+        Autoevaluacion,
+        on_delete=models.CASCADE
+    )
+
+class BorradorRetroalimentacion(models.Model):
+    id_borrador_retroalimentacion = models.AutoField(primary_key=True)
+    nivel_desempeño = models.IntegerField()
+    observaciones = models.TextField()
     id_autoevaluacion = models.OneToOneField(
         Autoevaluacion,
         on_delete=models.CASCADE

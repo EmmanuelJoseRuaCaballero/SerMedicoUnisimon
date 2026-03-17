@@ -6,16 +6,11 @@ from datetime import datetime
 
 from ..models import (
     Autoevaluacion,
+    BorradorAutoevaluacion,
     OpcionProcedimientos,
     ProcedimientoAutoevaluacion,
     SubOpcionProcedimientos,
-    Retroalimentacion
 )
-
-from ..serializers import (
-    AutoevaluacionSerializer,
-    ProcedimientoAutoevaluacionSerializer,
-)  
 
 # API Autoevaluacion
 class AutoevaluacionEstudianteView(APIView):
@@ -30,6 +25,7 @@ class AutoevaluacionEstudianteView(APIView):
     # @cedula_profesor: int
     # @procedimiento: int
     # @id_procedimientos: int
+    # @id_borrador_autoevaluacion: int
     # param URL
     # @cedula: int
     def post(self, request, cedula):
@@ -43,6 +39,7 @@ class AutoevaluacionEstudianteView(APIView):
             cedula_profesor = request.data.get("cedula_profesor")
             procedimiento = request.data.get("procedimiento")
             id_procedimientos = request.data.get("id_procedimientos")
+            id_borrador_autoevaluacion = request.data.get("id_borrador_autoevaluacion")
 
             if nivel_desempeño == 1:
                 desempeño = "Novato"
@@ -83,6 +80,11 @@ class AutoevaluacionEstudianteView(APIView):
                 id_procedimientos_id=id_procedimientos
             )
 
+            if id_borrador_autoevaluacion:
+                BorradorAutoevaluacion.objects.get(
+                    id_borrador_autoevaluacion=id_borrador_autoevaluacion
+                ).delete()
+
             return Response(
                 status=status.HTTP_201_CREATED
             )
@@ -108,12 +110,14 @@ class AutoevaluacionEstudianteView(APIView):
                 if hasattr(autoevaluacion, "retroalimentacion"):
                     retroalimentacion = {
                         "nivel_desempeño": autoevaluacion.retroalimentacion.nivel_desempeño,
-                        "detalles": autoevaluacion.retroalimentacion.detalles
+                        "fecha": autoevaluacion.retroalimentacion.fecha,
+                        "observaciones": autoevaluacion.retroalimentacion.observaciones
                     }
                 else:
                     retroalimentacion = {
                         "nivel_desempeño": "",
-                        "detalles": ""
+                        "fecha": "",
+                        "observaciones": ""
                     }
                 lista_pa = ProcedimientoAutoevaluacion.objects.filter(
                 id_autoevaluacion=autoevaluacion
@@ -176,12 +180,14 @@ class AutoevaluacionProfesorView(APIView):
                 if hasattr(autoevaluacion, "retroalimentacion"):
                     retroalimentacion = {
                         "nivel_desempeño": autoevaluacion.retroalimentacion.nivel_desempeño,
-                        "detalles": autoevaluacion.retroalimentacion.detalles
+                        "fecha": autoevaluacion.retroalimentacion.fecha,
+                        "observaciones": autoevaluacion.retroalimentacion.observaciones
                     }
                 else:
                     retroalimentacion = {
                         "nivel_desempeño": "",
-                        "detalles": ""
+                        "fecha": "",
+                        "observaciones": ""
                     }
                 lista_pa = ProcedimientoAutoevaluacion.objects.filter(
                 id_autoevaluacion=autoevaluacion

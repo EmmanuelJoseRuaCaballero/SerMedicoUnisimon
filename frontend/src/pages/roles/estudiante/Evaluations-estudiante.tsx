@@ -83,7 +83,8 @@ interface Profesor {
 
 interface Retroalimentacion {
   nivel_desempeño: string;
-  detalles: string;
+  observaciones: string;
+  fecha: string;
 }
 
 interface Autoevaluacion {
@@ -97,6 +98,21 @@ interface Autoevaluacion {
   lugar: string;
   nombre_profesor: string;
   retroalimentacion: Retroalimentacion;
+}
+
+interface BorradorAutoevaluacion {
+  verificacion: boolean;
+  id_borrador_autoevaluacion: number;
+  nombre_procedimiento: string;
+  procedimiento: number;
+  id_procedimientos: number;
+  id_lugar: number;
+  nivel_desempeño: number;
+  actividad: boolean;
+  cedula_profesor: number;
+  hora_inicio: string;
+  hora_final: string;
+  fecha: string;
 }
 
 export default function Evaluations_estudiante() {
@@ -121,18 +137,22 @@ export default function Evaluations_estudiante() {
   // Nivel desempeño
   const [nivelDesempeño, setNivelDesempeño] = React.useState<number>();
   // Actividad
-  const [tipoActividad, setTipoActividad] = React.useState<boolean>(false);
-  const [tipoActividadString, setTipoActividadString] =
-    React.useState<string>();
+  const [tipoActividad, setTipoActividad] = React.useState<boolean | null>(
+    null,
+  );
   // Profesor
   const [profesores, setProfesores] = React.useState<Profesor[]>([]);
-  const [profesor, setProfesor] = React.useState<string>("");
+  const [profesor, setProfesor] = React.useState<number>();
   // Hora
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFinal, setHoraFinal] = useState("");
   // Calendario
   const [fecha, setFecha] = React.useState<Date>();
   const [openFecha, setOpenFecha] = React.useState(false);
+
+  // Borrador
+  const [borradorAutoevaluacion, setBorradorAutoevaluacion] =
+    React.useState<BorradorAutoevaluacion | null>(null);
 
   // Reiniciar formulario
   const limpiarFormulario = () => {
@@ -141,8 +161,8 @@ export default function Evaluations_estudiante() {
     setProcedimientoID(undefined);
     setLugarID(undefined);
     setNivelDesempeño(undefined);
-    setTipoActividad(false);
-    setProfesor("");
+    setTipoActividad(null);
+    setProfesor(undefined);
     setHoraInicio("");
     setHoraFinal("");
     setFecha(undefined);
@@ -171,25 +191,34 @@ export default function Evaluations_estudiante() {
 
     const cargarDatos = async () => {
       try {
-        const [procedimientosRes, lugarRes, profesoresRes, autoevaluacionRes] =
-          await Promise.all([
-            fetch("http://127.0.0.1:8000/api/procedimientos/"),
-            fetch("http://127.0.0.1:8000/api/lugar/"),
-            fetch("http://127.0.0.1:8000/api/profesor/"),
-            fetch(
-              `http://127.0.0.1:8000/api/autoevaluacion/estudiante/${cedula}/`,
-            ),
-          ]);
+        const [
+          procedimientosRes,
+          lugarRes,
+          profesoresRes,
+          autoevaluacionRes,
+          borradorAutoevaluacionRes,
+        ] = await Promise.all([
+          fetch("http://127.0.0.1:8000/api/procedimientos/"),
+          fetch("http://127.0.0.1:8000/api/lugar/"),
+          fetch("http://127.0.0.1:8000/api/profesor/"),
+          fetch(
+            `http://127.0.0.1:8000/api/autoevaluacion/estudiante/${cedula}/`,
+          ),
+          fetch(`http://127.0.0.1:8000/api/borradorautoevaluacion/${cedula}/`),
+        ]);
 
         const procedimientoData = await procedimientosRes.json();
         const lugarData = await lugarRes.json();
         const profesoresData = await profesoresRes.json();
         const autoevaluacionData = await autoevaluacionRes.json();
+        const borradorAutoevaluacionData =
+          await borradorAutoevaluacionRes.json();
 
         setProcedimientos(procedimientoData);
         setLugares(lugarData);
         setProfesores(profesoresData);
         setAutoevaluacion(autoevaluacionData);
+        setBorradorAutoevaluacion(borradorAutoevaluacionData);
       } catch (error) {
         console.error(error);
       }
@@ -225,6 +254,8 @@ export default function Evaluations_estudiante() {
             cedula_profesor: Number(profesor),
             procedimiento,
             id_procedimientos: procedimientoID,
+            id_borrador_autoevaluacion:
+              borradorAutoevaluacion?.id_borrador_autoevaluacion,
           }),
         },
       );
@@ -243,6 +274,60 @@ export default function Evaluations_estudiante() {
     }
   };
 
+  const handleBorrador = async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/borradorautoevaluacion/${cedula}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nombre_procedimiento: seleccionado,
+            procedimiento,
+            id_procedimientos: procedimientoID,
+            id_lugar: lugarID,
+            nivel_desempeño: nivelDesempeño,
+            actividad: tipoActividad,
+            cedula_profesor: profesor,
+            hora_inicio: horaInicio,
+            hora_final: horaFinal,
+            fecha: formatDate(fecha),
+          }),
+        },
+      );
+      const data = await response.json();
+      if (response.ok) {
+        toastSuccess(data.message);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        window.location.reload();
+      } else if (response.status == 400) {
+        toastError(data.error);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      toastError("Error de conexión con el servidor");
+    }
+  };
+
+  // Verificacion de borrador
+  const verificacion = borradorAutoevaluacion?.verificacion;
+  const verificar = (valor: boolean) => {
+    if (valor && borradorAutoevaluacion) {
+      setSeleccionado(borradorAutoevaluacion.nombre_procedimiento.toString());
+      setProcedimiento(borradorAutoevaluacion.procedimiento);
+      setProcedimientoID(borradorAutoevaluacion.id_procedimientos);
+      setLugarID(borradorAutoevaluacion.id_lugar);
+      setNivelDesempeño(borradorAutoevaluacion.nivel_desempeño);
+      setTipoActividad(borradorAutoevaluacion.actividad);
+      setProfesor(borradorAutoevaluacion.cedula_profesor);
+      setHoraInicio(borradorAutoevaluacion.hora_inicio.slice(0, 5));
+      setHoraFinal(borradorAutoevaluacion.hora_final.slice(0, 5));
+      setFecha(new Date(borradorAutoevaluacion.fecha));
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -258,6 +343,7 @@ export default function Evaluations_estudiante() {
               if (!value) {
                 limpiarFormulario();
               }
+              verificar(!!verificacion);
             }}
           >
             <DialogTrigger asChild>
@@ -384,6 +470,7 @@ export default function Evaluations_estudiante() {
                     <Label>Lugar</Label>
 
                     <Select
+                      value={lugarID ? String(lugarID) : ""}
                       onValueChange={(value) => setLugarID(Number(value))}
                     >
                       <SelectTrigger>
@@ -408,6 +495,7 @@ export default function Evaluations_estudiante() {
                     <Label>Nivel Desempeño (Modelo Dreyfus y Dreyfus)</Label>
 
                     <Select
+                      value={nivelDesempeño ? String(nivelDesempeño) : ""}
                       onValueChange={(value) =>
                         setNivelDesempeño(Number(value))
                       }
@@ -599,9 +687,11 @@ export default function Evaluations_estudiante() {
                     <Label>Actividad</Label>
 
                     <Select
+                      value={
+                        tipoActividad !== null ? String(tipoActividad) : ""
+                      }
                       onValueChange={(value) => {
                         setTipoActividad(value === "true");
-                        setTipoActividadString("Algo");
                       }}
                     >
                       <SelectTrigger>
@@ -619,7 +709,10 @@ export default function Evaluations_estudiante() {
                   <div className="grid gap-2">
                     <Label>Profesor</Label>
 
-                    <Select onValueChange={(value) => setProfesor(value)}>
+                    <Select
+                      value={profesor ? String(profesor) : ""}
+                      onValueChange={(value) => setProfesor(Number(value))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar Profesor" />
                       </SelectTrigger>
@@ -641,7 +734,10 @@ export default function Evaluations_estudiante() {
                   <div className="grid gap-2">
                     <Label>Hora Inicio</Label>
 
-                    <Select onValueChange={(value) => setHoraInicio(value)}>
+                    <Select
+                      value={horaInicio ? String(horaInicio) : ""}
+                      onValueChange={(value) => setHoraInicio(value)}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccionar hora" />
                       </SelectTrigger>
@@ -660,7 +756,10 @@ export default function Evaluations_estudiante() {
                   <div className="grid gap-2">
                     <Label>Hora Final</Label>
 
-                    <Select onValueChange={(value) => setHoraFinal(value)}>
+                    <Select
+                      value={horaFinal ? String(horaFinal) : ""}
+                      onValueChange={(value) => setHoraFinal(value)}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccionar hora" />
                       </SelectTrigger>
@@ -712,12 +811,29 @@ export default function Evaluations_estudiante() {
                       <Button variant="outline">Cancelar</Button>
                     </DialogClose>
                     <Button
+                      variant={"borrador"}
+                      type="button"
+                      onClick={handleBorrador}
+                      disabled={
+                        !seleccionado ||
+                        !lugarID ||
+                        !nivelDesempeño ||
+                        tipoActividad === null ||
+                        !profesor ||
+                        !horaInicio ||
+                        !horaFinal ||
+                        !fecha
+                      }
+                    >
+                      Crear Borrador
+                    </Button>
+                    <Button
                       type="submit"
                       disabled={
                         !seleccionado ||
                         !lugarID ||
                         !nivelDesempeño ||
-                        !tipoActividadString ||
+                        tipoActividad === null ||
                         !profesor ||
                         !horaInicio ||
                         !horaFinal ||
@@ -749,7 +865,7 @@ export default function Evaluations_estudiante() {
                     </h2>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600">
                     <div>
                       <span className="font-medium text-gray-700">
                         Profesor
@@ -806,7 +922,7 @@ export default function Evaluations_estudiante() {
                       </AccordionTrigger>
 
                       <AccordionContent className="text-sm text-gray-600 pb-4">
-                        <div className="grid grid-cols-2 md:grid-cols-1 gap-4 text-sm text-gray-600">
+                        <div className="flex items-start space-x-6 text-sm text-gray-600">
                           <div>
                             <span className="font-medium text-gray-700">
                               Nivel Desempeño
@@ -815,10 +931,17 @@ export default function Evaluations_estudiante() {
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">
-                              Detalles
+                              Fecha
                             </span>
-                            <p>{ae.retroalimentacion.detalles}</p>
+                            <p>{ae.retroalimentacion.fecha}</p>
                           </div>
+                        </div>
+
+                        <div className="mt-4 text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">
+                            Observaciones
+                          </span>
+                          <p>{ae.retroalimentacion.observaciones}</p>
                         </div>
                       </AccordionContent>
                     </AccordionItem>

@@ -35,7 +35,8 @@ import { toastError, toastSuccess } from "@/hooks/toast-sonner";
 
 interface Retroalimentacion {
   nivel_desempeño: string;
-  detalles: string;
+  observaciones: string;
+  fecha: string;
 }
 
 interface Autoevaluacion {
@@ -51,6 +52,14 @@ interface Autoevaluacion {
   retroalimentacion: Retroalimentacion;
 }
 
+interface BorradorRetroalimentacion {
+  verificacion: boolean;
+  id_borrador_retroalimentacion: number;
+  nivel_desempeño: number;
+  observaciones: string;
+  id_autoevaluacion: number;
+}
+
 export default function Evaluations_profesor() {
   const cedula = localStorage.getItem("cedula");
   // Tarjetas
@@ -63,17 +72,21 @@ export default function Evaluations_profesor() {
   // Selects
   // Nivel desempeño
   const [nivelDesempeño, setNivelDesempeño] = React.useState<number>();
-  // Detalles
-  const [detalles, setDetalles] = React.useState<string>("");
+  // observaciones
+  const [observaciones, setObservaciones] = React.useState<string>("");
   // Modal
   const [openModalRetroalimentacion, setOpenModalRetroalimentacion] =
     React.useState(false);
+
+  // Borrador
+  const [borradorRetroalimentacion, setBorradorRetroalimentacion] =
+      React.useState<BorradorRetroalimentacion | null>(null);
 
   // Reiniciar formulario
   const limpiarFormulario = () => {
     setAutoevaluacionID(undefined);
     setNivelDesempeño(undefined);
-    setDetalles("");
+    setObservaciones("");
   };
 
   // APIS
@@ -84,12 +97,16 @@ export default function Evaluations_profesor() {
 
     const cargarDatos = async () => {
       try {
-        const [autoevaluacionRes] = await Promise.all([
+        const [autoevaluacionRes, borradorRetroalimentacionRes] = await Promise.all([
           fetch(`http://127.0.0.1:8000/api/autoevaluacion/profesor/${cedula}/`),
+          fetch("http://127.0.0.1:8000/api/borradorretroalimentacion/"),
         ]);
 
         const autoevaluacionData = await autoevaluacionRes.json();
+        const borradorRetroalimentacionData = await borradorRetroalimentacionRes.json();
+
         setAutoevaluacion(autoevaluacionData);
+        setBorradorRetroalimentacion(borradorRetroalimentacionData);
       } catch (error) {
         console.error(error);
       }
@@ -99,38 +116,45 @@ export default function Evaluations_profesor() {
 
   const handleSubmitRetroalimentacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({
-      nivel_desempeño: nivelDesempeño,
-      detalles: detalles,
-      id_autoevaluacion: autoevaluacionID,
-    });
-
     try {
-          const response = await fetch(
-            `http://127.0.0.1:8000/api/retroalimentacion/`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                nivel_desempeño: nivelDesempeño,
-                detalles: detalles,
-                id_autoevaluacion: autoevaluacionID
-              }),
-            },
-          );
-    
-          if (response.ok) {
-            toastSuccess("Retroalimetacion Enviada");
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-            window.location.reload();
-          }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-          toastError("Error de conexión con el servidor");
-        }
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/retroalimentacion/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nivel_desempeño: nivelDesempeño,
+            observaciones: observaciones,
+            id_autoevaluacion: autoevaluacionID,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        toastSuccess("Retroalimetacion Enviada");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        window.location.reload();
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      toastError("Error de conexión con el servidor");
+    }
   };
+
+  // Verificacion de borrador
+  const verificacion = borradorRetroalimentacion?.verificacion;
+  console.log(autoevaluacionSeleccionada?.id_autoevaluacion)
+  console.log(borradorRetroalimentacion?.verificacion)
+  const verificar = (valor: boolean) => {
+    if (valor && borradorRetroalimentacion && (autoevaluacionSeleccionada?.id_autoevaluacion == borradorRetroalimentacion?.id_autoevaluacion)) {
+        setNivelDesempeño(borradorRetroalimentacion.nivel_desempeño);
+        setObservaciones(borradorRetroalimentacion.observaciones);
+        console.log(borradorRetroalimentacion.nivel_desempeño)
+        console.log(borradorRetroalimentacion.observaciones)
+    }  
+  }
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -159,7 +183,7 @@ export default function Evaluations_profesor() {
                     </h2>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 [&>div]:min-w-0">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 [&>div]:min-w-0">
                     <div>
                       <span className="font-medium text-gray-700">
                         Profesor
@@ -207,7 +231,7 @@ export default function Evaluations_profesor() {
 
                     <div>
                       {!ae.retroalimentacion.nivel_desempeño &&
-                        !ae.retroalimentacion.detalles && (
+                        !ae.retroalimentacion.observaciones && (
                           <>
                             <Button
                               className="max-w-full"
@@ -233,7 +257,7 @@ export default function Evaluations_profesor() {
                       </AccordionTrigger>
 
                       <AccordionContent className="text-sm text-gray-600 pb-4">
-                        <div className="grid grid-cols-2 md:grid-cols-1 gap-4 text-sm text-gray-600">
+                        <div className="flex items-start space-x-6 text-sm text-gray-600">
                           <div>
                             <span className="font-medium text-gray-700">
                               Nivel Desempeño
@@ -242,10 +266,17 @@ export default function Evaluations_profesor() {
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">
-                              Detalles
+                              Fecha
                             </span>
-                            <p>{ae.retroalimentacion.detalles}</p>
+                            <p>{ae.retroalimentacion.fecha}</p>
                           </div>
+                        </div>
+
+                        <div className="mt-4 text-sm text-gray-600">
+                          <span className="font-medium text-gray-700">
+                            Observaciones
+                          </span>
+                          <p>{ae.retroalimentacion.observaciones}</p>
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -264,6 +295,7 @@ export default function Evaluations_profesor() {
                 setOpenModalRetroalimentacion(value);
                 limpiarFormulario();
               }
+              verificar(!!verificacion);
             }}
           >
             <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[568px] max-h-[80vh] overflow-y-auto rounded-lg bg-white">
@@ -280,6 +312,7 @@ export default function Evaluations_profesor() {
                       <Label>Nivel Desempeño (Modelo Dreyfus y Dreyfus)</Label>
 
                       <Select
+                        value={nivelDesempeño ? String(nivelDesempeño) : ""}
                         onValueChange={(value) =>
                           setNivelDesempeño(Number(value))
                         }
@@ -471,12 +504,12 @@ export default function Evaluations_profesor() {
                       )}
                     </div>
 
-                    {/* Detalles */}
+                    {/* Observaciones */}
                     <div className="grid gap-2">
                       <Label>Observaciones:</Label>
                       <Textarea
-                        value={detalles}
-                        onChange={(e) => setDetalles(e.target.value)}
+                        value={observaciones}
+                        onChange={(e) => setObservaciones(e.target.value)}
                         id="my-textarea"
                         placeholder="Por favor realice comentarios útiles para fortalecer el desempeño del estudiante..."
                       />
@@ -494,7 +527,7 @@ export default function Evaluations_profesor() {
                             autoevaluacionSeleccionada.id_autoevaluacion,
                           );
                         }}
-                        disabled={!nivelDesempeño || !detalles}
+                        disabled={!nivelDesempeño || !observaciones}
                       >
                         Guardar Retroalimentacion
                       </Button>
