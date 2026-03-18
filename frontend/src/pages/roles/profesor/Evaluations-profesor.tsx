@@ -53,7 +53,6 @@ interface Autoevaluacion {
 }
 
 interface BorradorRetroalimentacion {
-  verificacion: boolean;
   id_borrador_retroalimentacion: number;
   nivel_desempeño: number;
   observaciones: string;
@@ -80,11 +79,11 @@ export default function Evaluations_profesor() {
 
   // Borrador
   const [borradorRetroalimentacion, setBorradorRetroalimentacion] =
-      React.useState<BorradorRetroalimentacion | null>(null);
+    React.useState<BorradorRetroalimentacion[]>([]);
+  const [id_borrador_retroalimentacion, setIdBorradorRetroalimentacion] = React.useState<number>(); 
 
   // Reiniciar formulario
   const limpiarFormulario = () => {
-    setAutoevaluacionID(undefined);
     setNivelDesempeño(undefined);
     setObservaciones("");
   };
@@ -97,13 +96,19 @@ export default function Evaluations_profesor() {
 
     const cargarDatos = async () => {
       try {
-        const [autoevaluacionRes, borradorRetroalimentacionRes] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/api/autoevaluacion/profesor/${cedula}/`),
-          fetch("http://127.0.0.1:8000/api/borradorretroalimentacion/"),
-        ]);
+        const [autoevaluacionRes, borradorRetroalimentacionRes] =
+          await Promise.all([
+            fetch(
+              `http://127.0.0.1:8000/api/autoevaluacion/profesor/${cedula}/`,
+            ),
+            fetch(
+              `http://127.0.0.1:8000/api/borradorretroalimentaciondatos/${cedula}/`,
+            ),
+          ]);
 
         const autoevaluacionData = await autoevaluacionRes.json();
-        const borradorRetroalimentacionData = await borradorRetroalimentacionRes.json();
+        const borradorRetroalimentacionData =
+          await borradorRetroalimentacionRes.json();
 
         setAutoevaluacion(autoevaluacionData);
         setBorradorRetroalimentacion(borradorRetroalimentacionData);
@@ -128,6 +133,7 @@ export default function Evaluations_profesor() {
             nivel_desempeño: nivelDesempeño,
             observaciones: observaciones,
             id_autoevaluacion: autoevaluacionID,
+            id_borrador_retroalimentacion: id_borrador_retroalimentacion
           }),
         },
       );
@@ -143,18 +149,51 @@ export default function Evaluations_profesor() {
     }
   };
 
+  const handleBorrador = async (id: number) => {
+    console.log("id", autoevaluacionID);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/borradorretroalimentacion/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nivel_desempeño: nivelDesempeño,
+            observaciones: observaciones,
+            id_autoevaluacion: id,
+          }),
+        },
+      );
+      const data = await response.json();
+      if (response.ok) {
+        toastSuccess(data.message);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        window.location.reload();
+      } else if (response.status == 400) {
+        toastError(data.error);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      toastError("Error de conexión con el servidor");
+    }
+  };
+
   // Verificacion de borrador
-  const verificacion = borradorRetroalimentacion?.verificacion;
-  console.log(autoevaluacionSeleccionada?.id_autoevaluacion)
-  console.log(borradorRetroalimentacion?.verificacion)
-  const verificar = (valor: boolean) => {
-    if (valor && borradorRetroalimentacion && (autoevaluacionSeleccionada?.id_autoevaluacion == borradorRetroalimentacion?.id_autoevaluacion)) {
-        setNivelDesempeño(borradorRetroalimentacion.nivel_desempeño);
-        setObservaciones(borradorRetroalimentacion.observaciones);
-        console.log(borradorRetroalimentacion.nivel_desempeño)
-        console.log(borradorRetroalimentacion.observaciones)
-    }  
-  }
+  const verificar = (ae: Autoevaluacion) => {
+    const borrador = borradorRetroalimentacion.find(
+      (element) => element.id_autoevaluacion == ae.id_autoevaluacion,
+    );
+
+    if (borrador) {
+      setNivelDesempeño(borrador.nivel_desempeño);
+      setObservaciones(borrador.observaciones);
+      setIdBorradorRetroalimentacion(borrador.id_borrador_retroalimentacion);
+    } else {
+      limpiarFormulario();
+    }
+  };
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -186,7 +225,7 @@ export default function Evaluations_profesor() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 [&>div]:min-w-0">
                     <div>
                       <span className="font-medium text-gray-700">
-                        Profesor
+                        Estudiante
                       </span>
                       <p>{ae.nombre_estudiante}</p>
                     </div>
@@ -237,6 +276,7 @@ export default function Evaluations_profesor() {
                               className="max-w-full"
                               onClick={() => {
                                 setAutoevaluacionSeleccionada(ae);
+                                verificar(ae);
                                 setOpenModalRetroalimentacion(true);
                               }}
                             >
@@ -295,7 +335,6 @@ export default function Evaluations_profesor() {
                 setOpenModalRetroalimentacion(value);
                 limpiarFormulario();
               }
-              verificar(!!verificacion);
             }}
           >
             <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[568px] max-h-[80vh] overflow-y-auto rounded-lg bg-white">
@@ -520,6 +559,16 @@ export default function Evaluations_profesor() {
                       <DialogClose asChild>
                         <Button variant="outline">Cancelar</Button>
                       </DialogClose>
+                      <Button
+                        variant={"borrador"}
+                        type="button"
+                        onClick={() => {
+                          handleBorrador(autoevaluacionSeleccionada.id_autoevaluacion);
+                        }}
+                        disabled={!nivelDesempeño || !observaciones}
+                      >
+                        Crear Borrador
+                      </Button>
                       <Button
                         type="submit"
                         onClick={() => {

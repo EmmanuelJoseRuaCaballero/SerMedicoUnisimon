@@ -4,6 +4,7 @@ from rest_framework import status # type: ignore
 
 from ..models import (
     Autoevaluacion,
+    BorradorRetroalimentacion,
     OpcionProcedimientos,
     ProcedimientoAutoevaluacion,
     SubOpcionProcedimientos,
@@ -21,6 +22,7 @@ class RetroalimentacionView(APIView):
             nivel_desempeño = request.data.get("nivel_desempeño")
             observaciones = request.data.get("observaciones")
             id_autoevaluacion = request.data.get("id_autoevaluacion")  
+            id_borrador_retroalimentacion = request.data.get("id_borrador_retroalimentacion")
 
             if nivel_desempeño == 1:
                 desempeño = "Novato"
@@ -38,6 +40,11 @@ class RetroalimentacionView(APIView):
                 observaciones=observaciones,
                 id_autoevaluacion_id=id_autoevaluacion
             )
+
+            if id_borrador_retroalimentacion:
+                BorradorRetroalimentacion.objects.get(
+                    id_borrador_retroalimentacion=id_borrador_retroalimentacion
+                ).delete()
 
             return Response(
                 status=status.HTTP_201_CREATED

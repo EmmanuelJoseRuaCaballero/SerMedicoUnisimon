@@ -7,7 +7,7 @@ from app.api.apiProfesor import ProfesorView
 from app.api.apiAutoevaluacion import AutoevaluacionEstudianteView, AutoevaluacionProfesorView
 from app.api.apiRetroalimentacion import RetroalimentacionView
 from app.api.apiBorradorAutoevaluacion import BorradorAutoevaluacionView
-from app.api.apiBorradorRetroalimentacion import BorradorRetroalimentacionView
+from app.api.apiBorradorRetroalimentacion import BorradorRetroalimentacionDatosView, BorradorRetroalimentacionView
 
 
 urlpatterns = [
@@ -28,5 +28,6 @@ urlpatterns = [
     path("api/borradorautoevaluacion/<int:cedula>/", BorradorAutoevaluacionView.as_view(), name="borradorautoevaluacion"),
     # BorradorRetroalimentacion
     path("api/borradorretroalimentacion/", BorradorRetroalimentacionView.as_view(), name="borradorretroalimentacion"),
+    path("api/borradorretroalimentaciondatos/<int:cedula>/", BorradorRetroalimentacionDatosView.as_view(), name="borradorretroalimentaciondatos"),
 
 ]
