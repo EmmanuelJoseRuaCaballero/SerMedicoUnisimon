@@ -3,27 +3,37 @@ from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 
 from ..models import (
-    Autoevaluacion,
     BorradorRetroalimentacion,
-    OpcionProcedimientos,
-    ProcedimientoAutoevaluacion,
-    SubOpcionProcedimientos,
     Retroalimentacion
 )
 
 class RetroalimentacionView(APIView):
-    # "POST"
-    # param JSON:
-    # @nivel_desempeño: int
-    # @observaciones: string
-    # @id_autoevaluacion: int
+    """
+    API Retroalimentacion
+    """
     def post(self, request):
+        """
+        Crea la retroalimentacion para el estudiante
+
+        Args:
+            request (Request): objeto con los datos enviados en el body
+        Body:
+            nivel_desempeño (int): nivel de desempeño del estudiante
+            observaciones (string): observaciones del estudiante
+            id_autoevaluacion (int): id de la autoevaluacion
+            id_borrador_retroalimentacion (int): id del borrador de retroalimentacion
+        Returns:
+            Response:
+                201: Crear retroalimentacion
+                500: Error interno del servidor
+        """
         try:
             nivel_desempeño = request.data.get("nivel_desempeño")
             observaciones = request.data.get("observaciones")
             id_autoevaluacion = request.data.get("id_autoevaluacion")  
             id_borrador_retroalimentacion = request.data.get("id_borrador_retroalimentacion")
 
+            # Elegir el nivel de desempeño
             if nivel_desempeño == 1:
                 desempeño = "Novato"
             elif nivel_desempeño == 2:
@@ -41,16 +51,18 @@ class RetroalimentacionView(APIView):
                 id_autoevaluacion_id=id_autoevaluacion
             )
 
+            # Eliminar el borrador, si existe
             if id_borrador_retroalimentacion:
                 BorradorRetroalimentacion.objects.get(
                     id_borrador_retroalimentacion=id_borrador_retroalimentacion
                 ).delete()
 
             return Response(
+                {"message": "Retroalimetacion Enviada"},
                 status=status.HTTP_201_CREATED
             )
         except Exception as e:
-           return Response(
-                {"error": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+            print("error", str(e))
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toastError, toastSuccess } from "@/hooks/toast-sonner";
+import { authFetch } from "@/lib/authFetch";
 
 interface Retroalimentacion {
   nivel_desempeño: string;
@@ -60,7 +61,6 @@ interface BorradorRetroalimentacion {
 }
 
 export default function Evaluations_profesor() {
-  const cedula = localStorage.getItem("cedula");
   // Tarjetas
   const [autoevaluacion, setAutoevaluacion] = React.useState<Autoevaluacion[]>(
     [],
@@ -98,11 +98,11 @@ export default function Evaluations_profesor() {
       try {
         const [autoevaluacionRes, borradorRetroalimentacionRes] =
           await Promise.all([
-            fetch(
-              `http://127.0.0.1:8000/api/autoevaluacion/profesor/${cedula}/`,
+            authFetch(
+              `http://127.0.0.1:8000/api/autoevaluacion/profesor/`,
             ),
-            fetch(
-              `http://127.0.0.1:8000/api/borradorretroalimentaciondatos/${cedula}/`,
+            authFetch(
+              `http://127.0.0.1:8000/api/borradorretroalimentaciondatos/`,
             ),
           ]);
 
@@ -117,7 +117,7 @@ export default function Evaluations_profesor() {
       }
     };
     cargarDatos();
-  }, [cedula]);
+  },);
 
   const handleSubmitRetroalimentacion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,13 +138,13 @@ export default function Evaluations_profesor() {
         },
       );
 
+      const data = await response.json();
       if (response.ok) {
-        toastSuccess("Retroalimetacion Enviada");
+        toastSuccess(data.message);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       toastError("Error de conexión con el servidor");
     }
   };
@@ -152,7 +152,7 @@ export default function Evaluations_profesor() {
   const handleBorrador = async (id: number) => {
     console.log("id", autoevaluacionID);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `http://127.0.0.1:8000/api/borradorretroalimentacion/`,
         {
           method: "POST",
@@ -174,8 +174,7 @@ export default function Evaluations_profesor() {
       } else if (response.status == 400) {
         toastError(data.error);
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       toastError("Error de conexión con el servidor");
     }
   };

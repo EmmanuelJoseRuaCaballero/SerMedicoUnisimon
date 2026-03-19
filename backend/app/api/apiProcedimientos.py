@@ -7,8 +7,18 @@ from ..models import (
 ) 
 
 class ProcedimientosView(APIView):
-    # "GET"
+    """
+    API Procedimientos
+    """
     def get(self, request):
+        """
+        Retornar todos los procedimientos, sus opciones y subopciones
+         
+        Returns:
+            Response:
+                200: Retornar la lista de los procedimientos
+                500: Error interno del servidor
+        """
         try:
             procedimientos = Procedimientos.objects.all()
 
@@ -43,10 +53,13 @@ class ProcedimientosView(APIView):
                     "opcion_procedimientos": lista_opcion_procedimientos
                 })
 
-            return Response(lista_procedimientos, status=status.HTTP_200_OK)
+            return Response(
+                lista_procedimientos, 
+                status=status.HTTP_200_OK
+            )
 
         except Exception as e:
+            print("error", str(e))
             return Response(
-                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toastError } from "@/hooks/toast-sonner";
 
 export default function Index() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    const ruta = localStorage.getItem("ruta");
+
+    if (token) {
+      navigate(`${ruta}/dashboard`); 
+    }
+  },);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,47 +33,25 @@ export default function Index() {
           password,
         }),
       });
-
-      // Guardar datos JSON
       const data = await response.json();
 
       if (response.ok) {      
-        localStorage.setItem("nombre", data.nombre);
-        // Ingreso Director del programa
-        if (data.rol == 1) {
-          navigate("/dashboard");
-        }
-        // Ingreso Coordinador de practica
-        else if (data.rol == 2) {
-            localStorage.setItem("ruta", "/coord-prac");
-            // Guardamos datos JSON
-            localStorage.setItem("cedula", data.cedula);
-            // Redirecionamos
-            navigate("/coord-prac/dashboard");
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
 
-          // Ingreso Coordinador de curso
-        } else if (data.rol == 3) {
-          navigate("/dashboard");
-          // Ingreso Profesor
-        } else if (data.rol == 4) {
+        localStorage.setItem("nombre", data.nombre);
+        localStorage.setItem("rol", data.rol);
+        
+        if (data.rol == 4) { // Ingreso Profesor
           localStorage.setItem("ruta", "/profesor");
-          // Guardamos datos JSON
-          localStorage.setItem("cedula", data.cedula);
-          navigate("/profesor/dashboard");
-          // Ingreso Estudiante
-        } else if (data.rol == 5) {
+          navigate("/profesor/dashboard");  // Redirecionamos
+        } else if (data.rol == 5) { // Ingreso Estudiante
           localStorage.setItem("ruta", "/estudiante");
-          // Guardamos datos JSON
-          localStorage.setItem("cedula", data.cedula);
-          // Redirecionamos
-          navigate("/estudiante/dashboard");
+          navigate("/estudiante/dashboard"); // Redirecionamos
         }
-      } else {
-        alert(data.error);
       }
-    } catch (error) {
-      console.error(error);
-      alert("Error conectando con el servidor");
+    } catch {
+      toastError("")
     }
   };
 

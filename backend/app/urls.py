@@ -1,5 +1,6 @@
 from django.urls import path
 
+from rest_framework_simplejwt.views import TokenRefreshView
 from app.api.apiLogin import LoginView
 from app.api.apiProcedimientos import ProcedimientosView
 from app.api.apiLugar import LugarView
@@ -20,14 +21,15 @@ urlpatterns = [
     # Profesor
     path("api/profesor/", ProfesorView.as_view(), name="profesor"),
     # Autoevaluacion
-    path("api/autoevaluacion/estudiante/<int:cedula>/", AutoevaluacionEstudianteView.as_view(), name="autoevaluacion_estudiante"),
-    path("api/autoevaluacion/profesor/<int:cedula>/", AutoevaluacionProfesorView.as_view(), name="autoevaluacion_profesor"),
+    path("api/autoevaluacion/estudiante/", AutoevaluacionEstudianteView.as_view(), name="autoevaluacion_estudiante"),
+    path("api/autoevaluacion/profesor/", AutoevaluacionProfesorView.as_view(), name="autoevaluacion_profesor"),
     # Retroalimentacion
     path("api/retroalimentacion/", RetroalimentacionView.as_view(), name="retroalimentacion"),
     # BorradorAutoevaluacion
-    path("api/borradorautoevaluacion/<int:cedula>/", BorradorAutoevaluacionView.as_view(), name="borradorautoevaluacion"),
+    path("api/borradorautoevaluacion/", BorradorAutoevaluacionView.as_view(), name="borradorautoevaluacion"),
     # BorradorRetroalimentacion
     path("api/borradorretroalimentacion/", BorradorRetroalimentacionView.as_view(), name="borradorretroalimentacion"),
-    path("api/borradorretroalimentaciondatos/<int:cedula>/", BorradorRetroalimentacionDatosView.as_view(), name="borradorretroalimentaciondatos"),
-
+    path("api/borradorretroalimentaciondatos/", BorradorRetroalimentacionDatosView.as_view(), name="borradorretroalimentaciondatos"),
+    # Toke Refresh
+    path('api/token/refresh/', TokenRefreshView.as_view()),
 ]

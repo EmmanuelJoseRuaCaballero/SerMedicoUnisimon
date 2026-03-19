@@ -53,6 +53,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { authFetch } from "@/lib/authFetch";
 
 interface SubOpcionProcedimiento {
   id_sub_opcion_procedimientos: number;
@@ -116,7 +117,6 @@ interface BorradorAutoevaluacion {
 }
 
 export default function Evaluations_estudiante() {
-  const cedula = localStorage.getItem("cedula");
   // Tarjetas
   const [autoevaluacion, setAutoevaluacion] = React.useState<Autoevaluacion[]>(
     [],
@@ -201,10 +201,8 @@ export default function Evaluations_estudiante() {
           fetch("http://127.0.0.1:8000/api/procedimientos/"),
           fetch("http://127.0.0.1:8000/api/lugar/"),
           fetch("http://127.0.0.1:8000/api/profesor/"),
-          fetch(
-            `http://127.0.0.1:8000/api/autoevaluacion/estudiante/${cedula}/`,
-          ),
-          fetch(`http://127.0.0.1:8000/api/borradorautoevaluacion/${cedula}/`),
+          authFetch(`http://127.0.0.1:8000/api/autoevaluacion/estudiante/`),
+          authFetch(`http://127.0.0.1:8000/api/borradorautoevaluacion/`),
         ]);
 
         const procedimientoData = await procedimientosRes.json();
@@ -224,7 +222,7 @@ export default function Evaluations_estudiante() {
       }
     };
     cargarDatos();
-  }, [cedula]);
+  });
 
   const handleSubmitCrear = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,8 +235,8 @@ export default function Evaluations_estudiante() {
     }
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/autoevaluacion/estudiante/${cedula}/`,
+      const response = await authFetch(
+        `http://127.0.0.1:8000/api/autoevaluacion/estudiante/`,
         {
           method: "POST",
           headers: {
@@ -260,24 +258,21 @@ export default function Evaluations_estudiante() {
         },
       );
 
-      //const data = await response.json();
-      if (response.ok) {
-        toastSuccess("Autoevaluacion Creada");
+      const data = await response.json();
+      if (response.status == 201) {
+        toastSuccess(data.message);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
-      } else if (response.status == 400) {
-        toastError("");
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       toastError("Error de conexión con el servidor");
     }
   };
 
   const handleBorrador = async () => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/borradorautoevaluacion/${cedula}/`,
+      const response = await authFetch(
+        `http://127.0.0.1:8000/api/borradorautoevaluacion/`,
         {
           method: "POST",
           headers: {
@@ -298,15 +293,16 @@ export default function Evaluations_estudiante() {
         },
       );
       const data = await response.json();
-      if (response.ok) {
+      if (data.condition) {
+        toastError(data.message);
+      } else if (response.ok) {
         toastSuccess(data.message);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
       } else if (response.status == 400) {
         toastError(data.error);
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       toastError("Error de conexión con el servidor");
     }
   };
@@ -324,7 +320,8 @@ export default function Evaluations_estudiante() {
       setProfesor(borradorAutoevaluacion.cedula_profesor);
       setHoraInicio(borradorAutoevaluacion.hora_inicio.slice(0, 5));
       setHoraFinal(borradorAutoevaluacion.hora_final.slice(0, 5));
-      setFecha(new Date(borradorAutoevaluacion.fecha));
+      const [year, month, day] = borradorAutoevaluacion.fecha.split("-");
+      setFecha(new Date(Number(year), Number(month) - 1, Number(day)));
     }
   };
 

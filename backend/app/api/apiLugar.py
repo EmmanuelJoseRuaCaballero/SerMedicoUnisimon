@@ -7,8 +7,18 @@ from ..models import (
 ) 
 
 class LugarView(APIView):
-    # "GET"
+    """
+    API Lugares
+    """
     def get(self, request):
+        """
+        Retornar todos los lugares
+         
+        Returns:
+            Response:
+                200: Retornar la lista de los lugares
+                500: Error interno del servidor
+        """
         try:
             lugares = Lugar.objects.all()
 
@@ -19,10 +29,13 @@ class LugarView(APIView):
                     "nombre": lugar.nombre_lugar
                 })
 
-            return Response(lista_lugares, status=status.HTTP_200_OK)
+            return Response(
+                lista_lugares, 
+                status=status.HTTP_200_OK
+            )
 
         except Exception as e:
+            print("error", str(e))
             return Response(
-                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
