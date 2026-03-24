@@ -13,10 +13,10 @@ export default function Index() {
     const token = localStorage.getItem("access");
     const ruta = localStorage.getItem("ruta");
 
-    if (token) {
-      navigate(`${ruta}/dashboard`); 
+    if (token && ruta) {
+      navigate(`${ruta}/dashboard`);
     }
-  },);
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,23 +35,25 @@ export default function Index() {
       });
       const data = await response.json();
 
-      if (response.ok) {      
-        localStorage.setItem("access", data.access);
-        localStorage.setItem("refresh", data.refresh);
+      if (!response.ok) {
+        toastError(data.error || "Credenciales inválidas");
+        return;
+      }
 
-        localStorage.setItem("nombre", data.nombre);
-        localStorage.setItem("rol", data.rol);
-        
-        if (data.rol == 4) { // Ingreso Profesor
-          localStorage.setItem("ruta", "/profesor");
-          navigate("/profesor/dashboard");  // Redirecionamos
-        } else if (data.rol == 5) { // Ingreso Estudiante
-          localStorage.setItem("ruta", "/estudiante");
-          navigate("/estudiante/dashboard"); // Redirecionamos
-        }
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      localStorage.setItem("nombre", data.nombre);
+      localStorage.setItem("rol", data.rol);
+
+      if (data.rol == 4) {
+        localStorage.setItem("ruta", "/profesor");
+        navigate("/profesor/dashboard");
+      } else if (data.rol == 5) {
+        localStorage.setItem("ruta", "/estudiante");
+        navigate("/estudiante/dashboard");
       }
     } catch {
-      toastError("")
+      toastError("");
     }
   };
 

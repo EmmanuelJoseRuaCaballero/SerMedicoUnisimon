@@ -46,14 +46,15 @@ class LoginView(APIView):
             elif user.id_roles.id_roles == 4:
                 perfil = Profesor.objects.get(cedula_profesor=user.cedula)
                 cedula = perfil.cedula_profesor
-                nombre = f"{perfil.nombre_1} {perfil.apellido_1} {perfil.apellido_2} {perfil.apellido_2}"
+                nombre = f"{perfil.nombre_1} {perfil.nombre_2} {perfil.apellido_1} {perfil.apellido_2}"
             else:
                 return Response(
                     {"error": "Rol no válido"},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-            refresh = RefreshToken()
+            refresh = RefreshToken.for_user(user)
+
             refresh['cedula'] = user.cedula
             refresh['rol'] = user.id_roles.id_roles
 
@@ -71,7 +72,7 @@ class LoginView(APIView):
                 {"error": "Usuario no encontrado"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        except Exception:
+        except Exception as e:
             return Response(
                 {"error": "Error interno del servidor"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

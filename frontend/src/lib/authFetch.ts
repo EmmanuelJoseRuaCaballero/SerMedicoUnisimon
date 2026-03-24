@@ -3,91 +3,108 @@ const logout = () => {
   window.location.href = "/";
 };
 
-const refreshToken = async (): Promise<string | null> => {
-  const refresh = localStorage.getItem("refresh");
+const isTokenExpired = (token: string) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+};
 
-  if (!refresh) {
-    logout();
-    return null;
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+const refreshToken = async (): Promise<string | null> => {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
   }
 
-  try {
-    const response = await fetch("http://127.0.0.1:8000/api/token/refresh/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh }),
-    });
+  isRefreshing = true;
 
-    const data = await response.json();
+  refreshPromise = (async () => {
+    const refresh = localStorage.getItem("refresh");
 
-    if (!response.ok || !data.access) {
-      console.error("Refresh inválido");
+    if (!refresh) {
       logout();
       return null;
     }
 
-    localStorage.setItem("access", data.access);
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/token/refresh/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh }),
+      });
 
-    return data.access;
+      const data = await response.json();
 
-  } catch (error) {
-    console.error("Error refresh:", error);
-    logout();
-    return null;
-  }
+      if (!response.ok || !data.access) {
+        logout();
+        return null;
+      }
+
+      localStorage.setItem("access", data.access);
+      return data.access;
+    } catch (error) {
+      console.error("Error refresh:", error);
+      logout();
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const authFetch = async (url: string, options: any = {}) => {
-  const token = localStorage.getItem("access");
+  let token = localStorage.getItem("access");
 
   if (!token) {
     logout();
     return Promise.reject("No token");
   }
 
-  try {
-    let response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-    });
+  // 🔥 VALIDAR ANTES DE HACER REQUEST
+  if (isTokenExpired(token)) {
+    token = await refreshToken();
 
-    if (response.status === 401) {
-      console.log("Token expirado, intentando refresh...");
-
-      const newToken = await refreshToken();
-
-      if (!newToken) {
-        return Promise.reject("No autorizado");
-      }
-
-      response = await fetch(url, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${newToken}`,
-          ...options.headers,
-        },
-      });
+    if (!token) {
+      logout();
+      return Promise.reject("No autorizado");
     }
+  }
 
-    if (response.status === 401 || response.status === 403) {
-      console.log("No autorizado (401/403)");
+  let response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  // 🔁 fallback por si expiró justo en ese momento
+  if (response.status === 401 || response.status === 403) {
+    const newToken = await refreshToken();
+
+    if (!newToken) {
       logout();
       return Promise.reject("No autorizado");
     }
 
-    return response;
-
-  } catch (error) {
-    console.error("Error en authFetch:", error);
-    logout();
-    return Promise.reject(error);
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${newToken}`,
+      },
+    });
   }
+
+  return response;
 };

@@ -1,6 +1,5 @@
 from django.urls import path
 
-from rest_framework_simplejwt.views import TokenRefreshView
 from app.api.apiLogin import LoginView
 from app.api.apiProcedimientos import ProcedimientosView
 from app.api.apiLugar import LugarView
@@ -9,7 +8,8 @@ from app.api.apiAutoevaluacion import AutoevaluacionEstudianteView, Autoevaluaci
 from app.api.apiRetroalimentacion import RetroalimentacionView
 from app.api.apiBorradorAutoevaluacion import BorradorAutoevaluacionView
 from app.api.apiBorradorRetroalimentacion import BorradorRetroalimentacionDatosView, BorradorRetroalimentacionView
-
+from app.api.apiTablaProcedimientos import TablaProcedimientosEstudianteView
+from app.token.refreshToken import CustomRefreshView
 
 urlpatterns = [
     # Login
@@ -30,6 +30,8 @@ urlpatterns = [
     # BorradorRetroalimentacion
     path("api/borradorretroalimentacion/", BorradorRetroalimentacionView.as_view(), name="borradorretroalimentacion"),
     path("api/borradorretroalimentaciondatos/", BorradorRetroalimentacionDatosView.as_view(), name="borradorretroalimentaciondatos"),
-    # Toke Refresh
-    path('api/token/refresh/', TokenRefreshView.as_view()),
+    # Tabla Procediminentos
+    path("api/tablaprocedimientos/estudiante/", TablaProcedimientosEstudianteView.as_view(), name="tablaprocedimientos"),
+    # Token Refresh
+    path('api/token/refresh/', CustomRefreshView.as_view()),
 ]
