@@ -154,6 +154,9 @@ export default function Evaluations_estudiante() {
   const [borradorAutoevaluacion, setBorradorAutoevaluacion] =
     React.useState<BorradorAutoevaluacion | null>(null);
 
+  // Botones
+  const [deshabilitar, SetDeshabilitar] = useState(false);
+
   // Reiniciar formulario
   const limpiarFormulario = () => {
     setSeleccionado("Seleccionar procedimiento");
@@ -233,6 +236,7 @@ export default function Evaluations_estudiante() {
     } else {
       actividad = 0;
     }
+    SetDeshabilitar(true);
 
     try {
       const response = await authFetch(
@@ -827,6 +831,7 @@ export default function Evaluations_estudiante() {
                     <Button
                       type="submit"
                       disabled={
+                        deshabilitar ||
                         !seleccionado ||
                         !lugarID ||
                         !nivelDesempeño ||
