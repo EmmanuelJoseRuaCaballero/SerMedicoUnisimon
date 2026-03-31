@@ -66,6 +66,9 @@ npm install @radix-ui/react-checkbox
 npm install @radix-ui/react-dropdown-menu
 npm install @radix-ui/react-accordion
 
+# Graficas
+npm install recharts
+
 # Iniciar entorno de desarrollo
 npm run dev
 ```
