@@ -8,8 +8,9 @@ from app.api.apiAutoevaluacion import AutoevaluacionEstudianteView, Autoevaluaci
 from app.api.apiRetroalimentacion import RetroalimentacionView
 from app.api.apiBorradorAutoevaluacion import BorradorAutoevaluacionView
 from app.api.apiBorradorRetroalimentacion import BorradorRetroalimentacionDatosView, BorradorRetroalimentacionView
-from app.api.apiTablaProcedimientos import TablaProcedimientosEstudianteView
+from app.api.apiTablaProcedimientos import TablaProcedimientosEstudianteView, TablaProcedimientosProfesorView
 from app.token.refreshToken import CustomRefreshView
+from app.api.apiCurvaAprendizaje import CurvaAprendizajeView
 
 urlpatterns = [
     # Login
@@ -32,6 +33,9 @@ urlpatterns = [
     path("api/borradorretroalimentaciondatos/", BorradorRetroalimentacionDatosView.as_view(), name="borradorretroalimentaciondatos"),
     # Tabla Procediminentos
     path("api/tablaprocedimientos/estudiante/", TablaProcedimientosEstudianteView.as_view(), name="tablaprocedimientos"),
+    path("api/tablaprocedimientos/profesor/", TablaProcedimientosProfesorView.as_view(), name="tablaprocedimientos"),
+    # Curva Aprendizaje
+    path("api/curvaaprendizaje/", CurvaAprendizajeView.as_view(), name="curvaaprendizaje"),
     # Token Refresh
     path('api/token/refresh/', CustomRefreshView.as_view()),
 ]

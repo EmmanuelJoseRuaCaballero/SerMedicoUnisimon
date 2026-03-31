@@ -40,7 +40,7 @@ class BorradorAutoevaluacion(models.Model):
     cedula_profesor = models.IntegerField()
     hora_inicio = models.TimeField()
     hora_final = models.TimeField()
-    fecha = models.DateField()
+    fecha = models.DateField(auto_now_add=True)
     cedula_estudiante = models.OneToOneField (
         Estudiante,
         on_delete=models.CASCADE
@@ -71,7 +71,7 @@ class Autoevaluacion(models.Model):
     actividad_simulada = models.IntegerField(null=True)
     hora_inicio = models.TimeField()
     hora_final = models.TimeField()
-    fecha = models.DateField()
+    fecha = models.DateField(auto_now_add=True)
     id_lugar = models.ForeignKey(Lugar, on_delete=models.CASCADE)
     cedula_profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE)
     cedula_estudiante = models.ForeignKey(Estudiante, on_delete=models.CASCADE)

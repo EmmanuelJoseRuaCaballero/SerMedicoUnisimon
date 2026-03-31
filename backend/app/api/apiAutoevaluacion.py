@@ -57,7 +57,7 @@ class AutoevaluacionEstudianteView(APIView):
             tipo_actividad = request.data.get("tipo_actividad")
             hora_inicio = datetime.strptime(request.data.get("hora_inicio"), "%H:%M").time()
             hora_final = datetime.strptime(request.data.get("hora_final"), "%H:%M").time()
-            fecha = request.data.get("fecha")
+            #fecha = request.data.get("fecha")
             id_lugar = request.data.get("id_lugar")
             cedula_profesor = request.data.get("cedula_profesor")
             procedimiento = request.data.get("procedimiento")
@@ -83,7 +83,7 @@ class AutoevaluacionEstudianteView(APIView):
                     actividad_real=1,
                     hora_inicio=hora_inicio,
                     hora_final=hora_final,
-                    fecha=fecha,
+                    #fecha=fecha,
                     id_lugar_id=id_lugar,
                     cedula_profesor_id=cedula_profesor,
                     cedula_estudiante_id=cedula_estudiante,
@@ -94,7 +94,7 @@ class AutoevaluacionEstudianteView(APIView):
                     actividad_simulada=1,
                     hora_inicio=hora_inicio,
                     hora_final=hora_final,
-                    fecha=fecha,
+                    #fecha=fecha,
                     id_lugar_id=id_lugar,
                     cedula_profesor_id=cedula_profesor,
                     cedula_estudiante_id=cedula_estudiante,

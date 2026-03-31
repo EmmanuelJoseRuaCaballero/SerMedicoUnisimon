@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 
-import React from "react";
+import React, { useState } from "react";
 
 import {
   Dialog,
@@ -87,6 +87,9 @@ export default function Evaluations_profesor() {
     setNivelDesempeño(undefined);
     setObservaciones("");
   };
+  
+  // Botones
+    const [deshabilitar, SetDeshabilitar] = useState(false);
 
   // APIS
   const fetched = React.useRef(false);
@@ -121,6 +124,7 @@ export default function Evaluations_profesor() {
 
   const handleSubmitRetroalimentacion = async (e: React.FormEvent) => {
     e.preventDefault();
+    SetDeshabilitar(true);
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/retroalimentacion/`,
@@ -150,7 +154,7 @@ export default function Evaluations_profesor() {
   };
 
   const handleBorrador = async (id: number) => {
-    console.log("id", autoevaluacionID);
+    SetDeshabilitar(true);
     try {
       const response = await authFetch(
         `http://127.0.0.1:8000/api/borradorretroalimentacion/`,
@@ -564,7 +568,7 @@ export default function Evaluations_profesor() {
                         onClick={() => {
                           handleBorrador(autoevaluacionSeleccionada.id_autoevaluacion);
                         }}
-                        disabled={!nivelDesempeño || !observaciones}
+                        disabled={deshabilitar || !nivelDesempeño || !observaciones}
                       >
                         Crear Borrador
                       </Button>
@@ -575,7 +579,7 @@ export default function Evaluations_profesor() {
                             autoevaluacionSeleccionada.id_autoevaluacion,
                           );
                         }}
-                        disabled={!nivelDesempeño || !observaciones}
+                        disabled={deshabilitar || !nivelDesempeño || !observaciones}
                       >
                         Guardar Retroalimentacion
                       </Button>

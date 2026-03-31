@@ -56,8 +56,8 @@ class BorradorAutoevaluacionView(APIView):
                 )
             data = request.data.copy()
 
-            if data.get("fecha"):
-                data["fecha"] = datetime.strptime(data["fecha"], "%Y-%m-%d").date()
+            #if data.get("fecha"):
+            #    data["fecha"] = datetime.strptime(data["fecha"], "%Y-%m-%d").date()
 
             if data.get("hora_inicio"):
                 data["hora_inicio"] = datetime.strptime(data["hora_inicio"], "%H:%M").time()

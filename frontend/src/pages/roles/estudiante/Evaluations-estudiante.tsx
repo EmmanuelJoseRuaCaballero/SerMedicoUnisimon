@@ -1,14 +1,14 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+//import { CalendarIcon } from "lucide-react";
+//import { format } from "date-fns";
+//import { es } from "date-fns/locale";
 import React from "react";
 import { toastError, toastSuccess } from "@/hooks/toast-sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
+//import { Calendar } from "@/components/ui/calendar";
 
 import {
   Dialog,
@@ -39,11 +39,13 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 
+/*
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+ */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -147,8 +149,10 @@ export default function Evaluations_estudiante() {
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFinal, setHoraFinal] = useState("");
   // Calendario
+  /*
   const [fecha, setFecha] = React.useState<Date>();
   const [openFecha, setOpenFecha] = React.useState(false);
+  */
 
   // Borrador
   const [borradorAutoevaluacion, setBorradorAutoevaluacion] =
@@ -168,17 +172,18 @@ export default function Evaluations_estudiante() {
     setProfesor(undefined);
     setHoraInicio("");
     setHoraFinal("");
-    setFecha(undefined);
+    //setFecha(undefined);
   };
 
   // Formatear fecha
+  /*
   const formatDate = (date: Date | undefined) => {
     if (!date) return "";
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
-  };
+  }; */
 
   // Formato hora
   const horas = Array.from(
@@ -251,7 +256,7 @@ export default function Evaluations_estudiante() {
             tipo_actividad: actividad,
             hora_inicio: horaInicio,
             hora_final: horaFinal,
-            fecha: formatDate(fecha),
+            //fecha: formatDate(fecha),
             id_lugar: lugarID,
             cedula_profesor: Number(profesor),
             procedimiento,
@@ -274,6 +279,7 @@ export default function Evaluations_estudiante() {
   };
 
   const handleBorrador = async () => {
+    SetDeshabilitar(true);
     try {
       const response = await authFetch(
         `http://127.0.0.1:8000/api/borradorautoevaluacion/`,
@@ -292,7 +298,7 @@ export default function Evaluations_estudiante() {
             cedula_profesor: profesor,
             hora_inicio: horaInicio,
             hora_final: horaFinal,
-            fecha: formatDate(fecha),
+            //fecha: formatDate(fecha),
           }),
         },
       );
@@ -324,8 +330,8 @@ export default function Evaluations_estudiante() {
       setProfesor(borradorAutoevaluacion.cedula_profesor);
       setHoraInicio(borradorAutoevaluacion.hora_inicio.slice(0, 5));
       setHoraFinal(borradorAutoevaluacion.hora_final.slice(0, 5));
-      const [year, month, day] = borradorAutoevaluacion.fecha.split("-");
-      setFecha(new Date(Number(year), Number(month) - 1, Number(day)));
+      //const [year, month, day] = borradorAutoevaluacion.fecha.split("-");
+      //setFecha(new Date(Number(year), Number(month) - 1, Number(day)));
     }
   };
 
@@ -774,8 +780,8 @@ export default function Evaluations_estudiante() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Fecha */}
+                  
+                  {/* Fecha                   
                   <div className="grid gap-2">
                     <Label>Fecha</Label>
 
@@ -805,6 +811,7 @@ export default function Evaluations_estudiante() {
                       </PopoverContent>
                     </Popover>
                   </div>
+                  */}
                 </div>
                 <div className="mt-3">
                   <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
@@ -816,14 +823,15 @@ export default function Evaluations_estudiante() {
                       type="button"
                       onClick={handleBorrador}
                       disabled={
+                        deshabilitar ||
                         !seleccionado ||
                         !lugarID ||
                         !nivelDesempeño ||
                         tipoActividad === null ||
                         !profesor ||
                         !horaInicio ||
-                        !horaFinal ||
-                        !fecha
+                        !horaFinal // ||
+                        //!fecha
                       }
                     >
                       Crear Borrador
@@ -838,8 +846,8 @@ export default function Evaluations_estudiante() {
                         tipoActividad === null ||
                         !profesor ||
                         !horaInicio ||
-                        !horaFinal ||
-                        !fecha
+                        !horaFinal // ||
+                        //!fecha
                       }
                     >
                       Guardar Autoevaluacion
