@@ -61,7 +61,7 @@ export default function ClinicalPractice_estudiante() {
             Track your clinical practice hours and experiences
           </p>
         </div>
-        <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-96 flex items-center justify-center">
+        <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-96">
           {tablaProcedimientos.length != 0 ? (
             <div className="border rounded-xl overflow-hidden text-sm">
               <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] bg-green-100 px-4 py-2 text-xs font-semibold">

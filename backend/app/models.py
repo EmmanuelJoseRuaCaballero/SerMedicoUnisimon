@@ -27,6 +27,7 @@ class Estudiante(models.Model):
     apellido_1 = models.CharField(max_length=100, null=False)
     apellido_2 = models.CharField(max_length=100, null=True)
     semestre = models.IntegerField()
+    estado = models.BooleanField(default=False)
     id_roles = models.ForeignKey(Roles, on_delete=models.CASCADE)
 
 class BorradorAutoevaluacion(models.Model):

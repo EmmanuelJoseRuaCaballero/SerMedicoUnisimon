@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -27,7 +28,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: "Settings", href: `${BASE_ROUTE}/settings`, icon: Settings },
   ];
 
-  window.scrollTo(0, 0);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+}, []);
 
   return (
     <>

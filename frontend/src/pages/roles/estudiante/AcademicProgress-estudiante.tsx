@@ -24,7 +24,7 @@ import {
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "recharts";
+import { Label } from "@/components/ui/label";
 import { authFetch } from "@/lib/authFetch";
 
 interface SubOpcionProcedimiento {
