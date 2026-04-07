@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -11,25 +10,23 @@ from ..models import (
 )
 
 class CurvaAprendizajeView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Curva Aprendizaje
     """
     def get(self, request):
         try:
             user = request.user
-            
-            cedula_estudiante = request.user.cedula
 
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+            estudiante = user.estudiante
             
             autoevaluaciones = Autoevaluacion.objects.filter(
-                cedula_estudiante_id=cedula_estudiante
+                estudiante=estudiante
                 )
             
             codigo_procedimiento = 0
@@ -46,7 +43,7 @@ class CurvaAprendizajeView(APIView):
                         "nivel_desempeño": "",
                     }
                 lista_pa = ProcedimientoAutoevaluacion.objects.filter(
-                id_autoevaluacion=autoevaluacion
+                    autoevaluacion_id=autoevaluacion
                 )          
                 for pa in lista_pa:
                     if SubOpcionProcedimientos.objects.filter(

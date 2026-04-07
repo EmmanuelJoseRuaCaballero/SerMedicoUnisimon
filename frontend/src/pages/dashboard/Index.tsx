@@ -2,12 +2,38 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toastError } from "@/hooks/toast-sonner";
+import { authFetch } from "@/lib/authFetch";
 
 export default function Index() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  const obtenerPerfil = async () => {
+    try {
+      const response = await authFetch("http://127.0.0.1:8000/api/perfil/", {});
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toastError("Error obteniendo perfil");
+        return;
+      }
+
+      localStorage.setItem("nombre", data.nombre);
+
+      if (data.rol === "Profesor") {
+        localStorage.setItem("ruta", "/profesor");
+        navigate("/profesor/dashboard");
+      } else if (data.rol === "Estudiante") {
+        localStorage.setItem("ruta", "/estudiante");
+        navigate("/estudiante/dashboard");
+      }
+    } catch {
+      toastError("Error en el perfil");
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("access");
@@ -23,7 +49,7 @@ export default function Index() {
 
     // API inicio de sesion
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/login/", {
+      const response = await fetch("http://127.0.0.1:8000/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,24 +62,16 @@ export default function Index() {
       const data = await response.json();
 
       if (!response.ok) {
-        toastError(data.error || "Credenciales inválidas");
+        toastError("Credenciales inválidas");
         return;
       }
 
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
-      localStorage.setItem("nombre", data.nombre);
-      localStorage.setItem("rol", data.rol);
 
-      if (data.rol == 4) {
-        localStorage.setItem("ruta", "/profesor");
-        navigate("/profesor/dashboard");
-      } else if (data.rol == 5) {
-        localStorage.setItem("ruta", "/estudiante");
-        navigate("/estudiante/dashboard");
-      }
+      obtenerPerfil();
     } catch {
-      toastError("");
+      toastError("Error en el servidor");
     }
   };
 

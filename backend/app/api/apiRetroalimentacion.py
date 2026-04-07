@@ -30,7 +30,7 @@ class RetroalimentacionView(APIView):
         try:
             nivel_desempeño = request.data.get("nivel_desempeño")
             observaciones = request.data.get("observaciones")
-            id_autoevaluacion = request.data.get("id_autoevaluacion")  
+            autoevaluacion_id = request.data.get("autoevaluacion_id")  
             id_borrador_retroalimentacion = request.data.get("id_borrador_retroalimentacion")
 
             # Elegir el nivel de desempeño
@@ -48,13 +48,13 @@ class RetroalimentacionView(APIView):
             Retroalimentacion.objects.create(
                 nivel_desempeño=desempeño,
                 observaciones=observaciones,
-                id_autoevaluacion_id=id_autoevaluacion
+                autoevaluacion_id=autoevaluacion_id
             )
 
             # Eliminar el borrador, si existe
             if id_borrador_retroalimentacion:
                 BorradorRetroalimentacion.objects.get(
-                    id_borrador_retroalimentacion=id_borrador_retroalimentacion
+                    id=id_borrador_retroalimentacion
                 ).delete()
 
             return Response(

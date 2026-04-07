@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -14,7 +13,6 @@ from ..serializers import (
 )
 
 class BorradorAutoevaluacionView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Borrador Autoevaluacion
     """
@@ -46,14 +44,14 @@ class BorradorAutoevaluacionView(APIView):
         try:
             user = request.user
 
-            cedula_estudiante = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+            estudiante = user.estudiante
+
             data = request.data.copy()
 
             #if data.get("fecha"):
@@ -66,7 +64,7 @@ class BorradorAutoevaluacionView(APIView):
                 data["hora_final"] = datetime.strptime(data["hora_final"], "%H:%M").time()
 
             borrador = BorradorAutoevaluacion.objects.filter(
-                cedula_estudiante_id=cedula_estudiante
+                estudiante=estudiante
             ).first()
 
             if borrador:
@@ -98,7 +96,7 @@ class BorradorAutoevaluacionView(APIView):
                         status=status.HTTP_200_OK
                     )
             else:
-                data["cedula_estudiante"] = cedula_estudiante
+                data["estudiante"] = estudiante.id
 
                 serializer = BorradorAutoevaluacionSerializer(data=data)
 
@@ -135,22 +133,22 @@ class BorradorAutoevaluacionView(APIView):
         try:
             user = request.user
 
-            cedula_estudiante = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+            estudiante = user.estudiante
+
             borrador_autoevaluacion = BorradorAutoevaluacion.objects.filter(
-                cedula_estudiante_id=cedula_estudiante
+                estudiante_id=estudiante
             ).first()
 
             if borrador_autoevaluacion:
                 return Response({
                     "verificacion": True,
-                    "id_borrador_autoevaluacion": borrador_autoevaluacion.id_borrador_autoevaluacion,
+                    "id_borrador_autoevaluacion": borrador_autoevaluacion.id,
                     "nombre_procedimiento": borrador_autoevaluacion.nombre_procedimiento,
                     "procedimiento": borrador_autoevaluacion.procedimiento,
                     "id_procedimientos": borrador_autoevaluacion.id_procedimientos,

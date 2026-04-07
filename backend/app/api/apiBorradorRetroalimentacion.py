@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -9,7 +8,6 @@ from ..models import (
 )
 
 class BorradorRetroalimentacionView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Borrador Retroalimentacion
     """
@@ -33,18 +31,18 @@ class BorradorRetroalimentacionView(APIView):
         try:
             user = request.user
 
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 4:
-                print("error")
+            if not user.groups.filter(name="Profesor").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
             id_autoevaluacion = request.data.get("id_autoevaluacion")
             nivel_desempeño = request.data.get("nivel_desempeño")
             observaciones = request.data.get("observaciones")
 
             borrador = BorradorRetroalimentacion.objects.filter(
-                id_autoevaluacion_id=id_autoevaluacion
+                autoevaluacion_id=id_autoevaluacion
             ).first()
 
             if borrador:
@@ -72,7 +70,7 @@ class BorradorRetroalimentacionView(APIView):
                 BorradorRetroalimentacion.objects.create(
                     nivel_desempeño=nivel_desempeño,
                     observaciones=observaciones,
-                    id_autoevaluacion_id=id_autoevaluacion
+                    autoevaluacion_id=id_autoevaluacion
                 )
                 return Response(
                     {"message": "Borrador creado"},
@@ -84,43 +82,30 @@ class BorradorRetroalimentacionView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR    
             )
 
-class BorradorRetroalimentacionDatosView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
-    """
-    Retornar Borrador retroalimentacion del profesor
-        
-    Args:
-        cedula_profesor (int): cedula del profesor
-    Returns:
-        Response:
-            200: Retornar los borradores
-            500: Error interno del servidor
-    """
-    def get(
-        self, request):
+    def get(self, request):
         try:
             user = request.user
 
-            cedula_profesor = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 4:
-                print("error")
+            if not user.groups.filter(name="Profesor").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
-            autoevaluacion = Autoevaluacion.objects.filter(cedula_profesor_id=cedula_profesor)
+
+            profesor = user.profesor
+
+            autoevaluacion = Autoevaluacion.objects.filter(profesor=profesor)
             borrador_retroalimentacion = BorradorRetroalimentacion.objects.filter(
-                id_autoevaluacion_id__in=autoevaluacion)
+                autoevaluacion__in=autoevaluacion)
             lista_borrador = []
                 
             for borrador in borrador_retroalimentacion:
                 if borrador:
                     lista_borrador.append({
-                        "id_borrador_retroalimentacion": borrador.id_borrador_retroalimentacion,
+                        "id_borrador_retroalimentacion": borrador.id,
                         "nivel_desempeño": borrador.nivel_desempeño,
                         "observaciones": borrador.observaciones,
-                        "id_autoevaluacion": borrador.id_autoevaluacion_id
+                        "id_autoevaluacion": borrador.autoevaluacion_id
                     })     
             return Response(
                 lista_borrador, 

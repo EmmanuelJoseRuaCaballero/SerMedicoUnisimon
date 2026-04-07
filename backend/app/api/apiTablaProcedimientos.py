@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -10,7 +9,6 @@ from ..models import (
 )
 
 class TablaProcedimientosEstudianteView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Tabla Procedimientos
     """
@@ -30,27 +28,26 @@ class TablaProcedimientosEstudianteView(APIView):
         try:
             user = request.user
 
-            cedula_estudiante = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+            estudiante = user.estudiante
+
             proc_auto = ProcedimientoAutoevaluacion.objects.filter(
-                id_autoevaluacion__cedula_estudiante_id=cedula_estudiante
+                autoevaluacion_id__estudiante_id=estudiante
             ).select_related(
-                "id_autoevaluacion__id_lugar",
-                "id_autoevaluacion__cedula_profesor"
+                "autoevaluacion__lugar",
+                "autoevaluacion__profesor"
             )
 
             data = {}
 
             for pa in proc_auto:
                 proc_id = pa.procedimiento
-                auto = pa.id_autoevaluacion
+                auto = pa.autoevaluacion
 
                 if len(str(proc_id)) > 5:
                     sop = SubOpcionProcedimientos.objects.select_related(
@@ -98,8 +95,8 @@ class TablaProcedimientosEstudianteView(APIView):
                     proc_data["actividad_simulada"] += 1
                     opcion_data["actividad_simulada"] += 1
 
-                opcion_data["lugares"].add(auto.id_lugar.nombre_lugar)
-                opcion_data["profesores"].add(str(auto.cedula_profesor.nombre_1) + " " + str(auto.cedula_profesor.nombre_2) + " " + str(auto.cedula_profesor.apellido_1) + " " + str(auto.cedula_profesor.apellido_2))
+                opcion_data["lugares"].add(auto.lugar.nombre_lugar)
+                opcion_data["profesores"].add(str(auto.profesor.nombre_1) + " " + str(auto.profesor.nombre_2) + " " + str(auto.profesor.apellido_1) + " " + str(auto.profesor.apellido_2))
 
                 if subopcion_nombre:
                     if subopcion_nombre not in opcion_data["subopciones"]:
@@ -118,8 +115,8 @@ class TablaProcedimientosEstudianteView(APIView):
                     if auto.actividad_simulada:
                         sub_data["actividad_simulada"] += 1
 
-                    sub_data["lugares"].add(auto.id_lugar.nombre_lugar)
-                    sub_data["profesores"].add(str(auto.cedula_profesor.nombre_1) + " " + str(auto.cedula_profesor.nombre_2) + " " + str(auto.cedula_profesor.apellido_1) + " " + str(auto.cedula_profesor.apellido_2))
+                    sub_data["lugares"].add(auto.lugar.nombre_lugar)
+                    sub_data["profesores"].add(str(auto.profesor.nombre_1) + " " + str(auto.profesor.nombre_2) + " " + str(auto.profesor.apellido_1) + " " + str(auto.profesor.apellido_2))
 
             resultado = []
 
@@ -166,7 +163,6 @@ class TablaProcedimientosEstudianteView(APIView):
             )
         
 class TablaProcedimientosProfesorView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Tabla Procedimientos
     """
@@ -186,27 +182,26 @@ class TablaProcedimientosProfesorView(APIView):
         try:
             user = request.user
 
-            cedula_profesor = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 4:
-                print("error")
+            if not user.groups.filter(name="Profesor").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+            profesor = user.profesor
+
             proc_auto = ProcedimientoAutoevaluacion.objects.filter(
-                id_autoevaluacion__cedula_profesor_id=cedula_profesor
+                autoevaluacion_id__profesor_id=profesor
             ).select_related(
-                "id_autoevaluacion__id_lugar",
-                "id_autoevaluacion__cedula_estudiante"
+                "autoevaluacion__lugar",
+                "autoevaluacion__estudiante"
             )
 
             data = {}
 
             for pa in proc_auto:
                 proc_id = pa.procedimiento
-                auto = pa.id_autoevaluacion
+                auto = pa.autoevaluacion
 
                 if len(str(proc_id)) > 5:
                     sop = SubOpcionProcedimientos.objects.select_related(
@@ -254,8 +249,8 @@ class TablaProcedimientosProfesorView(APIView):
                     proc_data["actividad_simulada"] += 1
                     opcion_data["actividad_simulada"] += 1
 
-                opcion_data["lugares"].add(auto.id_lugar.nombre_lugar)
-                opcion_data["estudiantes"].add(str(auto.cedula_estudiante.nombre_1) + " " + str(auto.cedula_estudiante.nombre_2) + " " + str(auto.cedula_estudiante.apellido_1) + " " + str(auto.cedula_estudiante.apellido_2))
+                opcion_data["lugares"].add(auto.lugar.nombre_lugar)
+                opcion_data["estudiantes"].add(str(auto.estudiante.nombre_1) + " " + str(auto.estudiante.nombre_2) + " " + str(auto.estudiante.apellido_1) + " " + str(auto.estudiante.apellido_2))
 
                 if subopcion_nombre:
                     if subopcion_nombre not in opcion_data["subopciones"]:
@@ -274,8 +269,8 @@ class TablaProcedimientosProfesorView(APIView):
                     if auto.actividad_simulada:
                         sub_data["actividad_simulada"] += 1
 
-                    sub_data["lugares"].add(auto.id_lugar.nombre_lugar)
-                    sub_data["estudiantes"].add(str(auto.cedula_estudiante.nombre_1) + " " + str(auto.cedula_estudiante.nombre_2) + " " + str(auto.cedula_estudiante.apellido_1) + " " + str(auto.cedula_estudiante.apellido_2))
+                    sub_data["lugares"].add(auto.lugar.nombre_lugar)
+                    sub_data["estudiantes"].add(str(auto.estudiante.nombre_1) + " " + str(auto.estudiante.nombre_2) + " " + str(auto.estudiante.apellido_1) + " " + str(auto.estudiante.apellido_2))
 
             resultado = []
 

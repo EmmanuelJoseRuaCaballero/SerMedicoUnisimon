@@ -20,12 +20,12 @@ class LugarView(APIView):
                 500: Error interno del servidor
         """
         try:
-            lugares = Lugar.objects.all()
+            lugares = Lugar.objects.all().order_by("nombre_lugar")
 
             lista_lugares = []
             for lugar in lugares:
                 lista_lugares.append({
-                    "id_lugar": lugar.id_lugar,
+                    "id_lugar": lugar.id,
                     "nombre": lugar.nombre_lugar
                 })
 

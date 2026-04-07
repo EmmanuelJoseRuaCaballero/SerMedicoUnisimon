@@ -142,6 +142,8 @@ export default function Evaluations_estudiante() {
   const [tipoActividad, setTipoActividad] = React.useState<boolean | null>(
     null,
   );
+  // Estudiante
+  const [estadoEstudiante, setEstadoEstudiante] = React.useState<boolean>();
   // Profesor
   const [profesores, setProfesores] = React.useState<Profesor[]>([]);
   const [profesor, setProfesor] = React.useState<number>();
@@ -205,12 +207,14 @@ export default function Evaluations_estudiante() {
           profesoresRes,
           autoevaluacionRes,
           borradorAutoevaluacionRes,
+          estadoEstudianteRes,
         ] = await Promise.all([
           fetch("http://127.0.0.1:8000/api/procedimientos/"),
           fetch("http://127.0.0.1:8000/api/lugar/"),
           fetch("http://127.0.0.1:8000/api/profesor/"),
           authFetch(`http://127.0.0.1:8000/api/autoevaluacion/estudiante/`),
           authFetch(`http://127.0.0.1:8000/api/borradorautoevaluacion/`),
+          authFetch(`http://127.0.0.1:8000/api/validacionestudiante/`),
         ]);
 
         const procedimientoData = await procedimientosRes.json();
@@ -219,18 +223,35 @@ export default function Evaluations_estudiante() {
         const autoevaluacionData = await autoevaluacionRes.json();
         const borradorAutoevaluacionData =
           await borradorAutoevaluacionRes.json();
-
+        const estadoEstudianteData = await estadoEstudianteRes.json();
+        
         setProcedimientos(procedimientoData);
         setLugares(lugarData);
         setProfesores(profesoresData);
         setAutoevaluacion(autoevaluacionData);
         setBorradorAutoevaluacion(borradorAutoevaluacionData);
+        setEstadoEstudiante(estadoEstudianteData.estado === true || estadoEstudianteData.estado === "true" || estadoEstudianteData.estado === 1);
       } catch (error) {
         console.error(error);
       }
     };
     cargarDatos();
   });
+
+  const actualizarEstadoEstudiante = async (estadoEstudiante: boolean) => {
+    await authFetch(
+      `http://127.0.0.1:8000/api/validacionestudiante/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nuevo_estado: estadoEstudiante
+        }),
+      },
+    );
+  }
 
   const handleSubmitCrear = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,10 +278,10 @@ export default function Evaluations_estudiante() {
             hora_inicio: horaInicio,
             hora_final: horaFinal,
             //fecha: formatDate(fecha),
-            id_lugar: lugarID,
+            lugar_id: lugarID,
             cedula_profesor: Number(profesor),
             procedimiento,
-            id_procedimientos: procedimientoID,
+            procedimientos_id: procedimientoID,
             id_borrador_autoevaluacion:
               borradorAutoevaluacion?.id_borrador_autoevaluacion,
           }),
@@ -269,6 +290,7 @@ export default function Evaluations_estudiante() {
 
       const data = await response.json();
       if (response.status == 201) {
+        actualizarEstadoEstudiante(false)
         toastSuccess(data.message);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
@@ -279,7 +301,6 @@ export default function Evaluations_estudiante() {
   };
 
   const handleBorrador = async () => {
-    SetDeshabilitar(true);
     try {
       const response = await authFetch(
         `http://127.0.0.1:8000/api/borradorautoevaluacion/`,
@@ -306,6 +327,7 @@ export default function Evaluations_estudiante() {
       if (data.condition) {
         toastError(data.message);
       } else if (response.ok) {
+        SetDeshabilitar(true);
         toastSuccess(data.message);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
@@ -354,7 +376,7 @@ export default function Evaluations_estudiante() {
             }}
           >
             <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:opacity-90">
+              <Button className="bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:opacity-90" disabled={!estadoEstudiante} >
                 + Crear Autoevaluacion
               </Button>
             </DialogTrigger>

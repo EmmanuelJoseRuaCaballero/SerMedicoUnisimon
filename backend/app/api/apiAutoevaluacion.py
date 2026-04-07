@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -10,12 +9,11 @@ from ..models import (
     BorradorAutoevaluacion,
     OpcionProcedimientos,
     ProcedimientoAutoevaluacion,
+    Profesor,
     SubOpcionProcedimientos,
 )
 
 class AutoevaluacionEstudianteView(APIView):
-    # Utilizar token
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Autoevaluacion Estudiante
     """
@@ -45,23 +43,23 @@ class AutoevaluacionEstudianteView(APIView):
         try: 
             user = request.user
 
-            cedula_estudiante = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+            estudiante = user.estudiante
+
             nivel_desempeño = request.data.get("nivel_desempeño")
             tipo_actividad = request.data.get("tipo_actividad")
             hora_inicio = datetime.strptime(request.data.get("hora_inicio"), "%H:%M").time()
             hora_final = datetime.strptime(request.data.get("hora_final"), "%H:%M").time()
             #fecha = request.data.get("fecha")
-            id_lugar = request.data.get("id_lugar")
+            lugar_id = request.data.get("lugar_id")
             cedula_profesor = request.data.get("cedula_profesor")
             procedimiento = request.data.get("procedimiento")
-            id_procedimientos = request.data.get("id_procedimientos")
+            procedimientos_id = request.data.get("procedimientos_id")
             id_borrador_autoevaluacion = request.data.get("id_borrador_autoevaluacion")
 
             # Elegir el nivel de desempeño
@@ -77,6 +75,8 @@ class AutoevaluacionEstudianteView(APIView):
                 desempeño = "Experto"
                 
             # Guardar la autoevaluacion segun la actividad
+            profesor = Profesor.objects.get(cedula_profesor=cedula_profesor)
+
             if tipo_actividad == 1: # Real
                 autoevaluacion = Autoevaluacion.objects.create(
                     nivel_desempeño = desempeño,
@@ -84,9 +84,9 @@ class AutoevaluacionEstudianteView(APIView):
                     hora_inicio=hora_inicio,
                     hora_final=hora_final,
                     #fecha=fecha,
-                    id_lugar_id=id_lugar,
-                    cedula_profesor_id=cedula_profesor,
-                    cedula_estudiante_id=cedula_estudiante,
+                    lugar_id=lugar_id,
+                    profesor_id=profesor.id,
+                    estudiante_id=estudiante.id,
                 )
             elif tipo_actividad == 0: # Simulada
                 autoevaluacion = Autoevaluacion.objects.create(
@@ -95,20 +95,20 @@ class AutoevaluacionEstudianteView(APIView):
                     hora_inicio=hora_inicio,
                     hora_final=hora_final,
                     #fecha=fecha,
-                    id_lugar_id=id_lugar,
-                    cedula_profesor_id=cedula_profesor,
-                    cedula_estudiante_id=cedula_estudiante,
+                    lugar_id=lugar_id,
+                    profesor_id=profesor.id,
+                    estudiante_id=estudiante.id,
                 )
             ProcedimientoAutoevaluacion.objects.create(
                 procedimiento=procedimiento,
-                id_autoevaluacion=autoevaluacion,
-                id_procedimientos_id=id_procedimientos
+                autoevaluacion=autoevaluacion,
+                procedimientos_id=procedimientos_id
             )
 
             # Eliminar el borrador, si existe
             if id_borrador_autoevaluacion:
                 BorradorAutoevaluacion.objects.get(
-                    id_borrador_autoevaluacion=id_borrador_autoevaluacion
+                    id=id_borrador_autoevaluacion
                 ).delete()
 
             return Response(
@@ -135,23 +135,21 @@ class AutoevaluacionEstudianteView(APIView):
         try:
             user = request.user
 
-            cedula_estudiante = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 5:
-                print("error")
+            if not user.groups.filter(name="Estudiante").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+            estudiante = user.estudiante
+
             autoevaluaciones = Autoevaluacion.objects.filter(
-                cedula_estudiante_id=cedula_estudiante
+                estudiante_id=estudiante
                 )
             nombre_procedimiento = ""
 
             lista_autoevaluaciones = []
             for autoevaluacion in autoevaluaciones:
-                lugar = autoevaluacion.id_lugar
                 # Verificamos si tiene retroalimentacion
                 if hasattr(autoevaluacion, "retroalimentacion"):
                     retroalimentacion = {
@@ -166,7 +164,7 @@ class AutoevaluacionEstudianteView(APIView):
                         "observaciones": ""
                     }
                 lista_pa = ProcedimientoAutoevaluacion.objects.filter(
-                id_autoevaluacion=autoevaluacion
+                    autoevaluacion_id=autoevaluacion
                 )          
                 for pa in lista_pa:
                     if SubOpcionProcedimientos.objects.filter(
@@ -191,19 +189,19 @@ class AutoevaluacionEstudianteView(APIView):
                         tipo_actividad = "Simulada"
 
                     lista_autoevaluaciones.append({
-                        "id_autoevaluacion": autoevaluacion.id_autoevaluacion,
+                        "id_autoevaluacion": autoevaluacion.id,
                         "nombre_procedimiento": nombre_procedimiento,
                         "nivel_desempeño": autoevaluacion.nivel_desempeño,
                         "tipo_actividad": tipo_actividad,
                         "hora_inicio": autoevaluacion.hora_inicio,
                         "hora_final": autoevaluacion.hora_final,
                         "fecha": autoevaluacion.fecha,
-                        "lugar": lugar.nombre_lugar,
+                        "lugar": autoevaluacion.lugar.nombre_lugar,
                         "nombre_profesor": (
-                            f"{autoevaluacion.cedula_profesor.nombre_1} "
-                            f"{autoevaluacion.cedula_profesor.nombre_2} "
-                            f"{autoevaluacion.cedula_profesor.apellido_1} " 
-                            f"{autoevaluacion.cedula_profesor.apellido_2} "
+                            f"{autoevaluacion.profesor.nombre_1} "
+                            f"{autoevaluacion.profesor.nombre_2} "
+                            f"{autoevaluacion.profesor.apellido_1} " 
+                            f"{autoevaluacion.profesor.apellido_2} "
                         ),
                         "retroalimentacion": retroalimentacion
                     })
@@ -218,7 +216,6 @@ class AutoevaluacionEstudianteView(APIView):
             )
 
 class AutoevaluacionProfesorView(APIView):
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Autoevaluacion Profesor
     """
@@ -236,23 +233,21 @@ class AutoevaluacionProfesorView(APIView):
         try:
             user = request.user
 
-            cedula_profesor = request.user.cedula
-
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 4:
-                print("error")
+            if not user.groups.filter(name="Profesor").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+            profesor = user.profesor
             
             autoevaluaciones = Autoevaluacion.objects.filter(
-                cedula_profesor_id=cedula_profesor
+                profesor_id=profesor
             )
             nombre_procedimiento = ""
 
             lista_autoevaluaciones = []
             for autoevaluacion in autoevaluaciones:
-                lugar = autoevaluacion.id_lugar
                 # Verificamos si ya ha realizado retroalimentacion
                 if hasattr(autoevaluacion, "retroalimentacion"):
                     retroalimentacion = {
@@ -267,7 +262,7 @@ class AutoevaluacionProfesorView(APIView):
                         "observaciones": ""
                     }
                 lista_pa = ProcedimientoAutoevaluacion.objects.filter(
-                id_autoevaluacion=autoevaluacion
+                    autoevaluacion_id=autoevaluacion
                 )          
                 for pa in lista_pa:
                     if SubOpcionProcedimientos.objects.filter(
@@ -292,19 +287,19 @@ class AutoevaluacionProfesorView(APIView):
                         tipo_actividad = "Simulada"
 
                     lista_autoevaluaciones.append({
-                        "id_autoevaluacion": autoevaluacion.id_autoevaluacion,
+                        "id_autoevaluacion": autoevaluacion.id,
                         "nombre_procedimiento": nombre_procedimiento,
                         "nivel_desempeño": autoevaluacion.nivel_desempeño,
                         "tipo_actividad": tipo_actividad,
                         "hora_inicio": autoevaluacion.hora_inicio,
                         "hora_final": autoevaluacion.hora_final,
                         "fecha": autoevaluacion.fecha,
-                        "lugar": lugar.nombre_lugar,
+                        "lugar": autoevaluacion.lugar.nombre_lugar,
                         "nombre_estudiante": (
-                            f"{autoevaluacion.cedula_estudiante.nombre_1} " 
-                            f"{autoevaluacion.cedula_estudiante.nombre_2} " 
-                            f"{autoevaluacion.cedula_estudiante.apellido_1} " 
-                            f"{autoevaluacion.cedula_estudiante.apellido_2} "
+                            f"{autoevaluacion.estudiante.nombre_1} " 
+                            f"{autoevaluacion.estudiante.nombre_2} " 
+                            f"{autoevaluacion.estudiante.apellido_1} " 
+                            f"{autoevaluacion.estudiante.apellido_2} "
                         ), 
                         "retroalimentacion": retroalimentacion
                     })

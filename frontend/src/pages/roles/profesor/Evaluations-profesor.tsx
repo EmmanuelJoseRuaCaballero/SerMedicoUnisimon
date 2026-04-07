@@ -105,7 +105,7 @@ export default function Evaluations_profesor() {
               `http://127.0.0.1:8000/api/autoevaluacion/profesor/`,
             ),
             authFetch(
-              `http://127.0.0.1:8000/api/borradorretroalimentaciondatos/`,
+              `http://127.0.0.1:8000/api/borradorretroalimentacion/`,
             ),
           ]);
 
@@ -136,7 +136,7 @@ export default function Evaluations_profesor() {
           body: JSON.stringify({
             nivel_desempeño: nivelDesempeño,
             observaciones: observaciones,
-            id_autoevaluacion: autoevaluacionID,
+            autoevaluacion_id: autoevaluacionID,
             id_borrador_retroalimentacion: id_borrador_retroalimentacion
           }),
         },

@@ -1,4 +1,3 @@
-from app.token.authentication import CustomJWTAuthentication
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -9,7 +8,6 @@ from ..models import (
 
 class EstudianteView(APIView):
     # Utilizar token
-    authentication_classes = [CustomJWTAuthentication]
     """
     API Estudiante
     """
@@ -68,8 +66,7 @@ class EstudianteView(APIView):
             user = request.user
             data = request.data
 
-            if not hasattr(user, "id_roles") or user.id_roles.id_roles != 4:
-                print("error")
+            if not user.groups.filter(name="Profesor").exists():
                 return Response(
                     {"detail": "Acceso prohibido (rol)"},
                     status=status.HTTP_403_FORBIDDEN
@@ -98,3 +95,62 @@ class EstudianteView(APIView):
             )
 
 
+class ValidacionEstudianteView(APIView):
+    """
+    API Validacion Estudiante
+    """
+    def post(self, request):
+        try:
+            user = request.user
+
+            if not user.groups.filter(name="Estudiante").exists():
+                return Response(
+                    {"detail": "Acceso prohibido (rol)"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            estudiante = user.estudiante
+
+            nuevo_estado = request.data.get("nuevo_estado")
+
+            estado_estudiante = Estudiante.objects.filter(cedula_estudiante=estudiante.cedula_estudiante).first()
+
+            if estado_estudiante:
+                    estado_estudiante.estado = nuevo_estado
+                    estado_estudiante.save()
+            
+            return Response(
+                status=status.HTTP_200_OK
+            )
+        
+        except Exception as e:
+            print("error", str(e))
+            return Response(
+                {"error": "Error interno del servidor"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def get(self, request):
+        try:
+            user = request.user
+
+            if not user.groups.filter(name="Estudiante").exists():
+                return Response(
+                    {"detail": "Acceso prohibido (rol)"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            estudiante = user.estudiante
+
+            estado = Estudiante.objects.get(cedula_estudiante=estudiante.cedula_estudiante).estado
+
+            return Response(
+                {"estado": estado},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            print("error", str(e))
+            return Response(
+                {"error": "Error interno del servidor"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
