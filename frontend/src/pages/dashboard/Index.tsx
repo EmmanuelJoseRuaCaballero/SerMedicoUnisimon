@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toastError } from "@/hooks/toast-sonner";
+import { sileo } from "sileo";
 import { authFetch } from "@/lib/authFetch";
+import API_URL from "@/lib/config";
 
 export default function Index() {
   const [username, setUsername] = useState("");
@@ -12,15 +13,20 @@ export default function Index() {
 
   const obtenerPerfil = async () => {
     try {
-      const response = await authFetch("http://127.0.0.1:8000/api/perfil/", {});
+      const response = await authFetch(`${API_URL}/api/perfil/`, {});
 
       const data = await response.json();
 
       if (!response.ok) {
-        toastError("Error obteniendo perfil");
+        sileo.error({
+          title: "Error obteniendo perfil",
+          duration: 3000,
+          position: "top-center",
+        });
         return;
       }
-
+      
+      localStorage.setItem("rol", data.rol);
       localStorage.setItem("nombre", data.nombre);
 
       if (data.rol === "Profesor") {
@@ -31,7 +37,12 @@ export default function Index() {
         navigate("/estudiante/dashboard");
       }
     } catch {
-      toastError("Error en el perfil");
+      sileo.error({
+          title: "Error en el perfil",
+          duration: 3000,
+          position: "top-center",
+        });
+        return;
     }
   };
 
@@ -49,7 +60,7 @@ export default function Index() {
 
     // API inicio de sesion
     try {
-      const response = await fetch("http://127.0.0.1:8000/login/", {
+      const response = await fetch(`${API_URL}/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,7 +73,12 @@ export default function Index() {
       const data = await response.json();
 
       if (!response.ok) {
-        toastError("Credenciales inválidas");
+        sileo.error({
+          title: "Credenciales invalidas",
+          description: "Porfavor intenta otra vez.",
+          duration: 3000,
+          position: "top-center",
+        });
         return;
       }
 
@@ -71,7 +87,11 @@ export default function Index() {
 
       obtenerPerfil();
     } catch {
-      toastError("Error en el servidor");
+      sileo.error({
+        title: "Error de conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
     }
   };
 

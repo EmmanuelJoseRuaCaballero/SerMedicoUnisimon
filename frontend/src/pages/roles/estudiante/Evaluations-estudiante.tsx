@@ -4,12 +4,10 @@ import { useState } from "react";
 //import { format } from "date-fns";
 //import { es } from "date-fns/locale";
 import React from "react";
-import { toastError, toastSuccess } from "@/hooks/toast-sonner";
-
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 //import { Calendar } from "@/components/ui/calendar";
-
+import { SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -20,7 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   Select,
   SelectContent,
@@ -28,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,7 +34,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-
 /*
 import {
   Popover,
@@ -46,9 +41,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
  */
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import {
   Accordion,
   AccordionContent,
@@ -56,6 +49,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { authFetch } from "@/lib/authFetch";
+import API_URL from "@/lib/config";
+import { sileo } from "sileo";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SubOpcionProcedimiento {
   id_sub_opcion_procedimientos: number;
@@ -193,6 +198,8 @@ export default function Evaluations_estudiante() {
     (_, i) => `${i.toString().padStart(2, "0")}:00`,
   );
 
+  const isMobile = useIsMobile();
+
   // APIS
   const fetched = React.useRef(false);
   React.useEffect(() => {
@@ -209,12 +216,12 @@ export default function Evaluations_estudiante() {
           borradorAutoevaluacionRes,
           estadoEstudianteRes,
         ] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/procedimientos/"),
-          fetch("http://127.0.0.1:8000/api/lugar/"),
-          fetch("http://127.0.0.1:8000/api/profesor/"),
-          authFetch(`http://127.0.0.1:8000/api/autoevaluacion/estudiante/`),
-          authFetch(`http://127.0.0.1:8000/api/borradorautoevaluacion/`),
-          authFetch(`http://127.0.0.1:8000/api/validacionestudiante/`),
+          fetch(`${API_URL}/api/procedimientos/`),
+          fetch(`${API_URL}/api/lugar/`),
+          fetch(`${API_URL}/api/profesor/`),
+          authFetch(`${API_URL}/api/autoevaluacion/estudiante/`),
+          authFetch(`${API_URL}/api/borradorautoevaluacion/`),
+          authFetch(`${API_URL}/api/validacionestudiante/`),
         ]);
 
         const procedimientoData = await procedimientosRes.json();
@@ -224,34 +231,71 @@ export default function Evaluations_estudiante() {
         const borradorAutoevaluacionData =
           await borradorAutoevaluacionRes.json();
         const estadoEstudianteData = await estadoEstudianteRes.json();
-        
+
         setProcedimientos(procedimientoData);
         setLugares(lugarData);
         setProfesores(profesoresData);
         setAutoevaluacion(autoevaluacionData);
         setBorradorAutoevaluacion(borradorAutoevaluacionData);
-        setEstadoEstudiante(estadoEstudianteData.estado === true || estadoEstudianteData.estado === "true" || estadoEstudianteData.estado === 1);
-      } catch (error) {
-        console.error(error);
+        setEstadoEstudiante(
+          estadoEstudianteData.estado === true ||
+            estadoEstudianteData.estado === "true" ||
+            estadoEstudianteData.estado === 1,
+        );
+      } catch {
+        sileo.error({
+          title: "Error",
+          description: "Ha ocurrido un problema conexion con el servidor",
+          duration: 3000,
+          position: "top-center",
+        });
       }
     };
     cargarDatos();
   });
 
   const actualizarEstadoEstudiante = async (estadoEstudiante: boolean) => {
-    await authFetch(
-      `http://127.0.0.1:8000/api/validacionestudiante/`,
-      {
+    try {
+      await authFetch(`${API_URL}/api/validacionestudiante/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nuevo_estado: estadoEstudiante
+          nuevo_estado: estadoEstudiante,
         }),
-      },
-    );
-  }
+      });
+    } catch {
+      sileo.error({
+        title: "Error",
+        description: "Ha ocurrido un problema conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
+    }
+  };
+
+  const actualizarEstadoProfesor = async (estadoProfesor: boolean) => {
+    try {
+      await authFetch(`${API_URL}/api/validacionprofesor/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cedula_profesor: Number(profesor),
+          nuevo_estado: estadoProfesor,
+        }),
+      });
+    } catch {
+      sileo.error({
+        title: "Error",
+        description: "Ha ocurrido un problema conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
+    }
+  };
 
   const handleSubmitCrear = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,7 +310,7 @@ export default function Evaluations_estudiante() {
 
     try {
       const response = await authFetch(
-        `http://127.0.0.1:8000/api/autoevaluacion/estudiante/`,
+        `${API_URL}/api/autoevaluacion/estudiante/`,
         {
           method: "POST",
           headers: {
@@ -290,20 +334,31 @@ export default function Evaluations_estudiante() {
 
       const data = await response.json();
       if (response.status == 201) {
-        actualizarEstadoEstudiante(false)
-        toastSuccess(data.message);
+        actualizarEstadoEstudiante(false);
+        actualizarEstadoProfesor(false);
+        sileo.success({
+          title: "Exitoso",
+          description: data.message,
+          duration: 5000,
+          position: "top-right",
+        });
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
       }
     } catch {
-      toastError("Error de conexión con el servidor");
+      sileo.error({
+        title: "Error",
+        description: "Ha ocurrido un problema conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
     }
   };
 
   const handleBorrador = async () => {
     try {
       const response = await authFetch(
-        `http://127.0.0.1:8000/api/borradorautoevaluacion/`,
+        `${API_URL}/api/borradorautoevaluacion/`,
         {
           method: "POST",
           headers: {
@@ -325,17 +380,30 @@ export default function Evaluations_estudiante() {
       );
       const data = await response.json();
       if (data.condition) {
-        toastError(data.message);
+        sileo.warning({
+          title: "Advertencia",
+          description: data.message,
+          duration: 3000,
+          position: "top-right",
+        });
       } else if (response.ok) {
         SetDeshabilitar(true);
-        toastSuccess(data.message);
+        sileo.success({
+          title: "Exitoso",
+          description: data.message,
+          duration: 5000,
+          position: "top-right",
+        });
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
-      } else if (response.status == 400) {
-        toastError(data.error);
       }
     } catch {
-      toastError("Error de conexión con el servidor");
+      sileo.error({
+        title: "Error",
+        description: "Ha ocurrido un problema conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
     }
   };
 
@@ -357,6 +425,44 @@ export default function Evaluations_estudiante() {
     }
   };
 
+  // Filtros
+  const [pagina, setPagina] = useState(1);
+  const itemsPorPagina = 10;
+
+  const [openFiltros, setOpenFiltros] = useState(false);
+  const [filtroLugar, setFiltroLugar] = useState<number | undefined>();
+  const [filtroProfesor, setFiltroProfesor] = useState<number | undefined>();
+  const [filtroNivel, setFiltroNivel] = useState<string | undefined>();
+  const autoevaluacionesFiltradas = autoevaluacion.filter((ae) => {
+    const matchLugar =
+      !filtroLugar ||
+      lugares.find((l) => l.id_lugar === filtroLugar)?.nombre === ae.lugar;
+
+    const matchProfesor =
+      !filtroProfesor ||
+      profesores.find((p) => p.cedula_profesor === filtroProfesor)?.nombre ===
+        ae.nombre_profesor;
+
+    const matchNivel = !filtroNivel || ae.nivel_desempeño === filtroNivel;
+
+    return matchLugar && matchProfesor && matchNivel;
+  });
+
+  const autoevaluacionesPaginadas = autoevaluacionesFiltradas.slice(
+    (pagina - 1) * itemsPorPagina,
+    pagina * itemsPorPagina,
+  );
+
+  const totalPaginas = Math.ceil(
+    autoevaluacionesFiltradas.length / itemsPorPagina,
+  );
+
+  const limpiarFiltros = () => {
+    setFiltroLugar(undefined);
+    setFiltroProfesor(undefined);
+    setFiltroNivel(undefined);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -367,443 +473,580 @@ export default function Evaluations_estudiante() {
               Review your evaluations and feedback aqui
             </p>
           </div>
-          <Dialog
-            onOpenChange={(value) => {
-              if (!value) {
-                limpiarFormulario();
-              }
-              verificar(!!verificacion);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:opacity-90" disabled={!estadoEstudiante} >
-                + Crear Autoevaluacion
-              </Button>
-            </DialogTrigger>
+          <div className="flex justify-end items-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setOpenFiltros(true)}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </Button>
+            <Dialog
+              onOpenChange={(value) => {
+                if (!value) {
+                  limpiarFormulario();
+                }
+                verificar(!!verificacion);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  className="w-full bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:opacity-90"
+                  disabled={!estadoEstudiante}
+                >
+                  + Crear Autoevaluacion
+                </Button>
+              </DialogTrigger>
 
-            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[768px] max-h-[80vh] overflow-y-auto rounded-lg bg-white">
-              <form onSubmit={handleSubmitCrear}>
-                <DialogHeader>
-                  <DialogTitle>Crear Autoevaluacion</DialogTitle>
-                  <DialogDescription></DialogDescription>
-                </DialogHeader>
+              <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[640px] md:max-w-[768px] max-h-[80vh] overflow-y-auto rounded-lg bg-white">
+                <form onSubmit={handleSubmitCrear}>
+                  <DialogHeader>
+                    <DialogTitle>Crear Autoevaluacion</DialogTitle>
+                    <DialogDescription>
+                      Aqui podras crear una autoevaluacion
+                    </DialogDescription>
+                  </DialogHeader>
 
-                <div className="grid gap-5 py-4">
-                  {/* Procedimientos */}
-                  <div className="grid gap-2">
-                    <Label>Procedimientos</Label>
+                  <div className="grid gap-5 py-4">
+                    {/* Procedimientos */}
+                    {/* Mobile */}
+                    {isMobile ? (
+                      <div className="grid gap-2">
+                        <Label>Procedimientos</Label>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start w-full truncate text-left"
-                        >
-                          {seleccionado || "Seleccionar procedimiento"}
-                        </Button>
-                      </DropdownMenuTrigger>
+                        <Sheet>
+                          {/* BOTÓN */}
+                          <SheetTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start h-auto px-3 py-2 md:px-4 md:py-3"
+                            >
+                              <div className="w-full text-left whitespace-normal break-words leading-tight">
+                                {seleccionado || "Seleccionar procedimiento"}
+                              </div>
+                            </Button>
+                          </SheetTrigger>
 
-                      <DropdownMenuContent
-                        align="start"
-                        className="w-[280px] max-h-[420px] overflow-y-auto"
-                      >
-                        {procedimientos.map((procedimiento) => (
-                          <DropdownMenuSub
-                            key={procedimiento.id_procedimientos}
+                          {/* CONTENIDO */}
+                          <SheetContent
+                            side="bottom"
+                            className="h-[85vh] overflow-y-auto"
                           >
-                            <DropdownMenuSubTrigger>
-                              <span className="whitespace-normal break-words text-left">
-                                {procedimiento.nombre_p}
-                              </span>
-                            </DropdownMenuSubTrigger>
+                            <div className="space-y-4">
+                              {procedimientos.map((procedimiento) => (
+                                <div key={procedimiento.id_procedimientos}>
+                                  {/* NOMBRE PROCEDIMIENTO */}
+                                  <p className="font-semibold text-sm mb-2">
+                                    {procedimiento.nombre_p}
+                                  </p>
 
-                            <DropdownMenuSubContent className="w-[280px] max-h-[420px] overflow-y-auto">
-                              {procedimiento.opcion_procedimientos.map(
-                                (opcion) => {
-                                  // SIN SUBOPCIONES
-                                  if (
-                                    !opcion.sub_opcion_procedimientos?.length
-                                  ) {
-                                    return (
-                                      <DropdownMenuItem
+                                  {/* OPCIONES */}
+                                  {procedimiento.opcion_procedimientos.map(
+                                    (opcion) => (
+                                      <div
                                         key={opcion.id_opcion_procedimientos}
-                                        onClick={() => {
-                                          setSeleccionado(
-                                            `${procedimiento.nombre_p} - ${opcion.nombre_op}`,
-                                          );
-                                          setProcedimiento(
-                                            opcion.id_opcion_procedimientos,
-                                          );
-                                          setProcedimientoID(
-                                            procedimiento.id_procedimientos,
-                                          );
-                                        }}
+                                        className="ml-2"
                                       >
-                                        <span className="whitespace-normal break-words text-left">
-                                          {opcion.nombre_op}
-                                        </span>
-                                      </DropdownMenuItem>
-                                    );
-                                  }
-
-                                  // CON SUBOPCIONES
-                                  return (
-                                    <DropdownMenuSub
-                                      key={opcion.id_opcion_procedimientos}
-                                    >
-                                      <DropdownMenuSubTrigger>
-                                        <span className="whitespace-normal break-words text-left">
-                                          {opcion.nombre_op}
-                                        </span>
-                                      </DropdownMenuSubTrigger>
-
-                                      <DropdownMenuSubContent className="w-[280px] max-h-[420px] overflow-y-auto">
-                                        {opcion.sub_opcion_procedimientos.map(
-                                          (sub) => (
-                                            <DropdownMenuItem
-                                              key={
-                                                sub.id_sub_opcion_procedimientos
-                                              }
+                                        {/* SIN SUBOPCIONES */}
+                                        {!opcion.sub_opcion_procedimientos
+                                          ?.length && (
+                                          <SheetClose asChild>
+                                            <button
+                                              className="block w-full text-left text-sm py-2 px-2 rounded hover:bg-muted active:bg-muted"
                                               onClick={() => {
                                                 setSeleccionado(
-                                                  `${procedimiento.nombre_p} - ${opcion.nombre_op} - ${sub.nombre_sop}`,
+                                                  `${procedimiento.nombre_p} - ${opcion.nombre_op}`,
                                                 );
+
                                                 setProcedimiento(
-                                                  sub.id_sub_opcion_procedimientos,
+                                                  opcion.id_opcion_procedimientos,
                                                 );
                                                 setProcedimientoID(
                                                   procedimiento.id_procedimientos,
                                                 );
                                               }}
                                             >
-                                              <span className="whitespace-normal break-words text-left">
-                                                {sub.nombre_sop}
-                                              </span>
-                                            </DropdownMenuItem>
-                                          ),
+                                              {opcion.nombre_op}
+                                            </button>
+                                          </SheetClose>
                                         )}
-                                      </DropdownMenuSubContent>
-                                    </DropdownMenuSub>
-                                  );
-                                },
-                              )}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
 
-                  {/* Lugar */}
-                  <div className="grid gap-2">
-                    <Label>Lugar</Label>
+                                        {/* CON SUBOPCIONES */}
+                                        {opcion.sub_opcion_procedimientos
+                                          ?.length > 0 && (
+                                          <div>
+                                            <p className="text-sm font-medium py-2 px-2">
+                                              {opcion.nombre_op}
+                                            </p>
 
-                    <Select
-                      value={lugarID ? String(lugarID) : ""}
-                      onValueChange={(value) => setLugarID(Number(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar lugar" />
-                      </SelectTrigger>
+                                            {opcion.sub_opcion_procedimientos.map(
+                                              (sub) => (
+                                                <SheetClose
+                                                  asChild
+                                                  key={
+                                                    sub.id_sub_opcion_procedimientos
+                                                  }
+                                                >
+                                                  <button
+                                                    className="block w-full text-left text-sm py-2 pl-6 pr-2 rounded text-muted-foreground hover:bg-muted active:bg-muted"
+                                                    onClick={() => {
+                                                      setSeleccionado(
+                                                        `${procedimiento.nombre_p} - ${opcion.nombre_op} - ${sub.nombre_sop}`,
+                                                      );
 
-                      <SelectContent>
-                        {lugares.map((lugar) => (
-                          <SelectItem
-                            key={lugar.id_lugar}
-                            value={String(lugar.id_lugar)}
+                                                      setProcedimiento(
+                                                        sub.id_sub_opcion_procedimientos,
+                                                      );
+                                                      setProcedimientoID(
+                                                        procedimiento.id_procedimientos,
+                                                      );
+                                                    }}
+                                                  >
+                                                    {sub.nombre_sop}
+                                                  </button>
+                                                </SheetClose>
+                                              ),
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        {/*Desktop */}
+                        <Label>Procedimientos</Label>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start px-3 py-2 md:px-4 md:py-3 h-auto"
+                            >
+                              <div className="w-full text-left whitespace-normal break-words leading-tight">
+                                {seleccionado || "Seleccionar procedimiento"}
+                              </div>
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent
+                            align="start"
+                            className="w-[280px] max-h-[420px] overflow-y-auto"
                           >
-                            {lugar.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                            {procedimientos.map((procedimiento) => (
+                              <DropdownMenuSub
+                                key={procedimiento.id_procedimientos}
+                              >
+                                <DropdownMenuSubTrigger>
+                                  <span className="whitespace-normal break-words text-left">
+                                    {procedimiento.nombre_p}
+                                  </span>
+                                </DropdownMenuSubTrigger>
 
-                  {/* Nivel Desempeño */}
-                  <div className="grid gap-2">
-                    <Label>Nivel Desempeño (Modelo Dreyfus y Dreyfus)</Label>
+                                <DropdownMenuSubContent className="w-[280px] max-h-[420px] overflow-y-auto">
+                                  {procedimiento.opcion_procedimientos.map(
+                                    (opcion) => {
+                                      // SIN SUBOPCIONES
+                                      if (
+                                        !opcion.sub_opcion_procedimientos
+                                          ?.length
+                                      ) {
+                                        return (
+                                          <DropdownMenuItem
+                                            key={
+                                              opcion.id_opcion_procedimientos
+                                            }
+                                            onClick={() => {
+                                              setSeleccionado(
+                                                `${procedimiento.nombre_p} - ${opcion.nombre_op}`,
+                                              );
+                                              setProcedimiento(
+                                                opcion.id_opcion_procedimientos,
+                                              );
+                                              setProcedimientoID(
+                                                procedimiento.id_procedimientos,
+                                              );
+                                            }}
+                                          >
+                                            <span className="whitespace-normal break-words text-left">
+                                              {opcion.nombre_op}
+                                            </span>
+                                          </DropdownMenuItem>
+                                        );
+                                      }
 
-                    <Select
-                      value={nivelDesempeño ? String(nivelDesempeño) : ""}
-                      onValueChange={(value) =>
-                        setNivelDesempeño(Number(value))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar Desempeño" />
-                      </SelectTrigger>
+                                      // CON SUBOPCIONES
+                                      return (
+                                        <DropdownMenuSub
+                                          key={opcion.id_opcion_procedimientos}
+                                        >
+                                          <DropdownMenuSubTrigger>
+                                            <span className="whitespace-normal break-words text-left">
+                                              {opcion.nombre_op}
+                                            </span>
+                                          </DropdownMenuSubTrigger>
 
-                      <SelectContent>
-                        <SelectItem value="1">Novato</SelectItem>
-                        <SelectItem value="2">Principiante Avanzado</SelectItem>
-                        <SelectItem value="3">Competente</SelectItem>
-                        <SelectItem value="4">Profesional</SelectItem>
-                        <SelectItem value="5">Experto</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {nivelDesempeño && (
-                      <Card className="mt-4">
-                        <CardHeader>
-                          <CardTitle className="text-lg">
-                            {nivelDesempeño === 1 && "Novato"}
-                            {nivelDesempeño === 2 && "Principiante Avanzado"}
-                            {nivelDesempeño === 3 && "Competente"}
-                            {nivelDesempeño === 4 && "Profesional"}
-                            {nivelDesempeño === 5 && "Experto"}
-                          </CardTitle>
-                        </CardHeader>
-
-                        <CardContent className="text-sm text-muted-foreground">
-                          {nivelDesempeño === 1 && (
-                            <>
-                              <p>
-                                Este nivel se caracteriza por la falta de
-                                experiencia y conocimientos en una determinada
-                                área. Los novatos requieren instrucciones y
-                                reglas explícitas para llevar a cabo tareas,
-                                además de orientación por parte del profesor.
-                              </p>
-                              <br />
-                              <ul className="list-disc pl-5 space-y-1">
-                                <li>
-                                  Sigue reglas estrictas, descontextualizadas y
-                                  literales.
-                                </li>
-                                <li>
-                                  No reconoce patrones; depende completamente
-                                  del manual o del docente.
-                                </li>
-                                <li>
-                                  Actúa paso a paso, sin priorizar información.
-                                </li>
-                                <li>
-                                  En medicina: corresponde al estudiante que
-                                  necesita guías claras, listas de chequeo y
-                                  supervisión directa.
-                                </li>
-                              </ul>
-                            </>
-                          )}
-
-                          {nivelDesempeño === 2 && (
-                            <>
-                              <p>
-                                En este nivel, los individuos tienen alguna
-                                experiencia práctica en el área y pueden empezar
-                                a tomar decisiones por sí mismos, aunque aún
-                                requieren reglas claras y orientación del
-                                profesor.
-                              </p>
-                              <br />
-                              <ul className="list-disc pl-5 space-y-1">
-                                <li>
-                                  Comienza a identificar situaciones recurrentes
-                                  o “aspectos relevantes”.
-                                </li>
-                                <li>
-                                  Todavía depende de reglas, pero ya reconoce
-                                  patrones simples.
-                                </li>
-                                <li>
-                                  Toma decisiones básicas con apoyo cercano.
-                                </li>
-                                <li>
-                                  En medicina: puede realizar tareas
-                                  estructuradas (anamnesis, exploración) con
-                                  ayuda y ejemplos.
-                                </li>
-                              </ul>
-                            </>
-                          )}
-
-                          {nivelDesempeño === 3 && (
-                            <>
-                              <p>
-                                Las personas en este nivel tienen suficiente
-                                experiencia práctica para tomar decisiones sin
-                                necesidad de seguir reglas explícitas. Son
-                                capaces de resolver problemas comunes y realizar
-                                tareas de manera eficiente.
-                              </p>
-                              <br />
-                              <ul className="list-disc pl-5 space-y-1">
-                                <li>
-                                  Organiza la información, prioriza y planifica
-                                  acciones.
-                                </li>
-                                <li>
-                                  Toma decisiones deliberadas y responsables.
-                                </li>
-                                <li>Gestiona casos clínicos comunes.</li>
-                                <li>
-                                  En medicina: puede llevar un caso completo,
-                                  justificar decisiones y reflexionar sobre
-                                  errores.
-                                </li>
-                              </ul>
-                            </>
-                          )}
-
-                          {nivelDesempeño === 4 && (
-                            <>
-                              <p>
-                                Las personas alcanzan un alto nivel de
-                                experiencia práctica, lo que les permite
-                                adaptarse a situaciones imprevistas y manejar
-                                tareas complejas con éxito.
-                              </p>
-                              <br />
-                              <ul className="list-disc pl-5 space-y-1">
-                                <li>
-                                  Percibe la situación de manera holística
-                                  (integral).
-                                </li>
-                                <li>
-                                  Aplica las reglas con flexibilidad y empieza a
-                                  utilizar la intuición basada en la
-                                  experiencia.
-                                </li>
-                                <li>
-                                  Anticipa problemas y adapta planes de acción.
-                                </li>
-                                <li>
-                                  En medicina: resuelve casos complejos, integra
-                                  múltiples protocolos y orienta a otros
-                                  profesionales.
-                                </li>
-                              </ul>
-                            </>
-                          )}
-
-                          {nivelDesempeño === 5 && (
-                            <>
-                              <p>
-                                En este nivel, las personas tienen un
-                                conocimiento profundo y una amplia experiencia
-                                en el área que les permite tomar decisiones
-                                intuitivas y creativas en situaciones complejas.
-                              </p>
-                              <br />
-                              <ul className="list-disc pl-5 space-y-1">
-                                <li>
-                                  Toma decisiones de forma fluida, automática e
-                                  intuitiva.
-                                </li>
-                                <li>
-                                  Las reglas ya no guían su acción; actúa con
-                                  base en modelos mentales profundos.
-                                </li>
-                                <li>
-                                  Reconoce patrones sutiles y responde
-                                  rápidamente sin análisis explícito.
-                                </li>
-                                <li>
-                                  En medicina: corresponde a un clínico
-                                  altamente competente, líder y referente, con
-                                  elevada conciencia situacional.
-                                </li>
-                              </ul>
-                            </>
-                          )}
-                        </CardContent>
-                      </Card>
+                                          <DropdownMenuSubContent className="w-[280px] max-h-[420px] overflow-y-auto">
+                                            {opcion.sub_opcion_procedimientos.map(
+                                              (sub) => (
+                                                <DropdownMenuItem
+                                                  key={
+                                                    sub.id_sub_opcion_procedimientos
+                                                  }
+                                                  onClick={() => {
+                                                    setSeleccionado(
+                                                      `${procedimiento.nombre_p} - ${opcion.nombre_op} - ${sub.nombre_sop}`,
+                                                    );
+                                                    setProcedimiento(
+                                                      sub.id_sub_opcion_procedimientos,
+                                                    );
+                                                    setProcedimientoID(
+                                                      procedimiento.id_procedimientos,
+                                                    );
+                                                  }}
+                                                >
+                                                  <span className="whitespace-normal break-words text-left">
+                                                    {sub.nombre_sop}
+                                                  </span>
+                                                </DropdownMenuItem>
+                                              ),
+                                            )}
+                                          </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+                                      );
+                                    },
+                                  )}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     )}
-                  </div>
+                    {/* Lugar */}
+                    <div className="grid gap-2">
+                      <Label>Lugar</Label>
 
-                  {/* Actividad */}
-                  <div className="grid gap-2">
-                    <Label>Actividad</Label>
+                      <Select
+                        value={lugarID ? String(lugarID) : ""}
+                        onValueChange={(value) => setLugarID(Number(value))}
+                      >
+                        <SelectTrigger className="w-full justify-start px-3 py-2 md:px-4 md:py-3 h-auto">
+                          <div className="w-full text-left whitespace-normal break-words leading-tight">
+                            <SelectValue placeholder="Seleccionar lugar" />
+                          </div>
+                        </SelectTrigger>
 
-                    <Select
-                      value={
-                        tipoActividad !== null ? String(tipoActividad) : ""
-                      }
-                      onValueChange={(value) => {
-                        setTipoActividad(value === "true");
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar Actividad" />
-                      </SelectTrigger>
+                        <SelectContent className="w-[var(--radix-select-trigger-width)] max-h-[300px] overflow-y-auto">
+                          {lugares.map((lugar) => (
+                            <SelectItem
+                              key={lugar.id_lugar}
+                              value={String(lugar.id_lugar)}
+                              className="whitespace-normal break-words leading-snug"
+                            >
+                              {lugar.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                      <SelectContent>
-                        <SelectItem value="true">Real</SelectItem>
-                        <SelectItem value="false">Simulada</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    {/* Nivel Desempeño */}
+                    <div className="grid gap-2">
+                      <Label>Nivel Desempeño (Modelo Dreyfus y Dreyfus)</Label>
 
-                  {/* Profesor */}
-                  <div className="grid gap-2">
-                    <Label>Profesor</Label>
+                      <Select
+                        value={nivelDesempeño ? String(nivelDesempeño) : ""}
+                        onValueChange={(value) =>
+                          setNivelDesempeño(Number(value))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar Desempeño" />
+                        </SelectTrigger>
 
-                    <Select
-                      value={profesor ? String(profesor) : ""}
-                      onValueChange={(value) => setProfesor(Number(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar Profesor" />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {profesores.map((profesor) => (
-                          <SelectItem
-                            key={profesor.cedula_profesor}
-                            value={`${profesor.cedula_profesor}`}
-                          >
-                            {profesor.nombre}
+                        <SelectContent>
+                          <SelectItem value="1">Novato</SelectItem>
+                          <SelectItem value="2">
+                            Principiante Avanzado
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                          <SelectItem value="3">Competente</SelectItem>
+                          <SelectItem value="4">Profesional</SelectItem>
+                          <SelectItem value="5">Experto</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                  {/* Hora Inicio */}
-                  <div className="grid gap-2">
-                    <Label>Hora Inicio</Label>
+                      {nivelDesempeño && (
+                        <Card className="mt-4">
+                          <CardHeader>
+                            <CardTitle className="text-lg">
+                              {nivelDesempeño === 1 && "Novato"}
+                              {nivelDesempeño === 2 && "Principiante Avanzado"}
+                              {nivelDesempeño === 3 && "Competente"}
+                              {nivelDesempeño === 4 && "Profesional"}
+                              {nivelDesempeño === 5 && "Experto"}
+                            </CardTitle>
+                          </CardHeader>
 
-                    <Select
-                      value={horaInicio ? String(horaInicio) : ""}
-                      onValueChange={(value) => setHoraInicio(value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccionar hora" />
-                      </SelectTrigger>
+                          <CardContent className="text-sm text-muted-foreground">
+                            {nivelDesempeño === 1 && (
+                              <>
+                                <p>
+                                  Este nivel se caracteriza por la falta de
+                                  experiencia y conocimientos en una determinada
+                                  área. Los novatos requieren instrucciones y
+                                  reglas explícitas para llevar a cabo tareas,
+                                  además de orientación por parte del profesor.
+                                </p>
+                                <br />
+                                <ul className="list-disc pl-5 space-y-1">
+                                  <li>
+                                    Sigue reglas estrictas, descontextualizadas
+                                    y literales.
+                                  </li>
+                                  <li>
+                                    No reconoce patrones; depende completamente
+                                    del manual o del docente.
+                                  </li>
+                                  <li>
+                                    Actúa paso a paso, sin priorizar
+                                    información.
+                                  </li>
+                                  <li>
+                                    En medicina: corresponde al estudiante que
+                                    necesita guías claras, listas de chequeo y
+                                    supervisión directa.
+                                  </li>
+                                </ul>
+                              </>
+                            )}
 
-                      <SelectContent className="max-h-60">
-                        {horas.map((h) => (
-                          <SelectItem key={h} value={h}>
-                            {h}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                            {nivelDesempeño === 2 && (
+                              <>
+                                <p>
+                                  En este nivel, los individuos tienen alguna
+                                  experiencia práctica en el área y pueden
+                                  empezar a tomar decisiones por sí mismos,
+                                  aunque aún requieren reglas claras y
+                                  orientación del profesor.
+                                </p>
+                                <br />
+                                <ul className="list-disc pl-5 space-y-1">
+                                  <li>
+                                    Comienza a identificar situaciones
+                                    recurrentes o “aspectos relevantes”.
+                                  </li>
+                                  <li>
+                                    Todavía depende de reglas, pero ya reconoce
+                                    patrones simples.
+                                  </li>
+                                  <li>
+                                    Toma decisiones básicas con apoyo cercano.
+                                  </li>
+                                  <li>
+                                    En medicina: puede realizar tareas
+                                    estructuradas (anamnesis, exploración) con
+                                    ayuda y ejemplos.
+                                  </li>
+                                </ul>
+                              </>
+                            )}
 
-                  {/* Hora Final */}
-                  <div className="grid gap-2">
-                    <Label>Hora Final</Label>
+                            {nivelDesempeño === 3 && (
+                              <>
+                                <p>
+                                  Las personas en este nivel tienen suficiente
+                                  experiencia práctica para tomar decisiones sin
+                                  necesidad de seguir reglas explícitas. Son
+                                  capaces de resolver problemas comunes y
+                                  realizar tareas de manera eficiente.
+                                </p>
+                                <br />
+                                <ul className="list-disc pl-5 space-y-1">
+                                  <li>
+                                    Organiza la información, prioriza y
+                                    planifica acciones.
+                                  </li>
+                                  <li>
+                                    Toma decisiones deliberadas y responsables.
+                                  </li>
+                                  <li>Gestiona casos clínicos comunes.</li>
+                                  <li>
+                                    En medicina: puede llevar un caso completo,
+                                    justificar decisiones y reflexionar sobre
+                                    errores.
+                                  </li>
+                                </ul>
+                              </>
+                            )}
 
-                    <Select
-                      value={horaFinal ? String(horaFinal) : ""}
-                      onValueChange={(value) => setHoraFinal(value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccionar hora" />
-                      </SelectTrigger>
+                            {nivelDesempeño === 4 && (
+                              <>
+                                <p>
+                                  Las personas alcanzan un alto nivel de
+                                  experiencia práctica, lo que les permite
+                                  adaptarse a situaciones imprevistas y manejar
+                                  tareas complejas con éxito.
+                                </p>
+                                <br />
+                                <ul className="list-disc pl-5 space-y-1">
+                                  <li>
+                                    Percibe la situación de manera holística
+                                    (integral).
+                                  </li>
+                                  <li>
+                                    Aplica las reglas con flexibilidad y empieza
+                                    a utilizar la intuición basada en la
+                                    experiencia.
+                                  </li>
+                                  <li>
+                                    Anticipa problemas y adapta planes de
+                                    acción.
+                                  </li>
+                                  <li>
+                                    En medicina: resuelve casos complejos,
+                                    integra múltiples protocolos y orienta a
+                                    otros profesionales.
+                                  </li>
+                                </ul>
+                              </>
+                            )}
 
-                      <SelectContent className="max-h-60">
-                        {horas.map((h) => (
-                          <SelectItem key={h} value={h}>
-                            {h}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Fecha                   
+                            {nivelDesempeño === 5 && (
+                              <>
+                                <p>
+                                  En este nivel, las personas tienen un
+                                  conocimiento profundo y una amplia experiencia
+                                  en el área que les permite tomar decisiones
+                                  intuitivas y creativas en situaciones
+                                  complejas.
+                                </p>
+                                <br />
+                                <ul className="list-disc pl-5 space-y-1">
+                                  <li>
+                                    Toma decisiones de forma fluida, automática
+                                    e intuitiva.
+                                  </li>
+                                  <li>
+                                    Las reglas ya no guían su acción; actúa con
+                                    base en modelos mentales profundos.
+                                  </li>
+                                  <li>
+                                    Reconoce patrones sutiles y responde
+                                    rápidamente sin análisis explícito.
+                                  </li>
+                                  <li>
+                                    En medicina: corresponde a un clínico
+                                    altamente competente, líder y referente, con
+                                    elevada conciencia situacional.
+                                  </li>
+                                </ul>
+                              </>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Actividad */}
+                    <div className="grid gap-2">
+                      <Label>Actividad</Label>
+
+                      <Select
+                        value={
+                          tipoActividad !== null ? String(tipoActividad) : ""
+                        }
+                        onValueChange={(value) => {
+                          setTipoActividad(value === "true");
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar Actividad" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          <SelectItem value="true">Real</SelectItem>
+                          <SelectItem value="false">Simulada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Profesor */}
+                    <div className="grid gap-2">
+                      <Label>Profesor</Label>
+
+                      <Select
+                        value={profesor ? String(profesor) : ""}
+                        onValueChange={(value) => setProfesor(Number(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar Profesor" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {profesores.map((profesor) => (
+                            <SelectItem
+                              key={profesor.cedula_profesor}
+                              value={`${profesor.cedula_profesor}`}
+                            >
+                              {profesor.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Hora Inicio */}
+                    <div className="grid gap-2">
+                      <Label>Hora Inicio</Label>
+
+                      <Select
+                        value={horaInicio ? String(horaInicio) : ""}
+                        onValueChange={(value) => setHoraInicio(value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar hora" />
+                        </SelectTrigger>
+
+                        <SelectContent className="max-h-60">
+                          {horas.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Hora Final */}
+                    <div className="grid gap-2">
+                      <Label>Hora Final</Label>
+
+                      <Select
+                        value={horaFinal ? String(horaFinal) : ""}
+                        onValueChange={(value) => setHoraFinal(value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar hora" />
+                        </SelectTrigger>
+
+                        <SelectContent className="max-h-60">
+                          {horas.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Fecha                   
                   <div className="grid gap-2">
                     <Label>Fecha</Label>
 
@@ -834,60 +1077,61 @@ export default function Evaluations_estudiante() {
                     </Popover>
                   </div>
                   */}
-                </div>
-                <div className="mt-3">
-                  <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancelar</Button>
-                    </DialogClose>
-                    <Button
-                      variant={"borrador"}
-                      type="button"
-                      onClick={handleBorrador}
-                      disabled={
-                        deshabilitar ||
-                        !seleccionado ||
-                        !lugarID ||
-                        !nivelDesempeño ||
-                        tipoActividad === null ||
-                        !profesor ||
-                        !horaInicio ||
-                        !horaFinal // ||
-                        //!fecha
-                      }
-                    >
-                      Crear Borrador
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={
-                        deshabilitar ||
-                        !seleccionado ||
-                        !lugarID ||
-                        !nivelDesempeño ||
-                        tipoActividad === null ||
-                        !profesor ||
-                        !horaInicio ||
-                        !horaFinal // ||
-                        //!fecha
-                      }
-                    >
-                      Guardar Autoevaluacion
-                    </Button>
-                  </DialogFooter>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  </div>
+                  <div className="mt-3">
+                    <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                      </DialogClose>
+                        <Button
+                          variant={"borrador"}
+                          type="button"
+                          onClick={handleBorrador}
+                          disabled={
+                            deshabilitar ||
+                            !seleccionado ||
+                            !lugarID ||
+                            !nivelDesempeño ||
+                            tipoActividad === null ||
+                            !profesor ||
+                            !horaInicio ||
+                            !horaFinal // ||
+                            //!fecha
+                          }
+                        >
+                          Crear Borrador
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={
+                            deshabilitar ||
+                            !seleccionado ||
+                            !lugarID ||
+                            !nivelDesempeño ||
+                            tipoActividad === null ||
+                            !profesor ||
+                            !horaInicio ||
+                            !horaFinal // ||
+                            //!fecha
+                          }
+                        >
+                          Guardar Autoevaluacion
+                        </Button>
+                    </DialogFooter>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-96 flex items-center justify-center">
           {/* Tarjetas */}
           <div className="flex flex-col gap-6">
-            {autoevaluacion.map((ae: Autoevaluacion) => (
+            {autoevaluacionesPaginadas.map((ae: Autoevaluacion) => (
               <div
                 key={ae.id_autoevaluacion}
-                className="rounded-xl bg-white shadow-md border border-gray-200 hover:shadow-lg transition"
+                className="scroll-mt-24 rounded-xl bg-white shadow-md border border-gray-200 hover:shadow-lg transition"
               >
                 {/* Contenido principal */}
                 <div className="p-6">
@@ -982,6 +1226,130 @@ export default function Evaluations_estudiante() {
               </div>
             ))}
           </div>
+        </div>
+        <Sheet open={openFiltros} onOpenChange={setOpenFiltros}>
+          <SheetContent
+            side="right"
+            className="w-[90vw] sm:w-[420px] overflow-y-auto"
+          >
+            <SheetHeader>
+              <SheetTitle>Filtros</SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-4 space-y-4">
+              <div className="grid gap-2">
+                <Label>Lugar</Label>
+                <Select
+                  value={filtroLugar ? String(filtroLugar) : ""}
+                  onValueChange={(value) => setFiltroLugar(Number(value))}
+                >
+                  <SelectTrigger className="w-full justify-start px-3 py-2 md:px-4 md:py-3 h-auto">
+                    <div className="w-full text-left whitespace-normal break-words leading-tight">
+                      {" "}
+                      <SelectValue placeholder="Seleccionar lugar" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="w-[var(--radix-select-trigger-width)] max-h-[300px] overflow-y-auto">
+                    {lugares.map((lugar) => (
+                      <SelectItem
+                        key={lugar.id_lugar}
+                        value={String(lugar.id_lugar)}
+                        className="whitespace-normal break-words leading-snug"
+                      >
+                        {lugar.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Profesor</Label>
+                <Select
+                  value={filtroProfesor ? String(filtroProfesor) : ""}
+                  onValueChange={(value) => setFiltroProfesor(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar profesor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profesores.map((prof) => (
+                      <SelectItem
+                        key={prof.cedula_profesor}
+                        value={String(prof.cedula_profesor)}
+                      >
+                        {prof.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Nivel desempeño</Label>
+                <Select
+                  value={filtroNivel ?? ""}
+                  onValueChange={(value) => setFiltroNivel(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nivel desempeño" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="Novato">Novato</SelectItem>
+                    <SelectItem value="Principiante Avanzado">
+                      Principiante Avanzado
+                    </SelectItem>
+                    <SelectItem value="Competente">Competente</SelectItem>
+                    <SelectItem value="Profesional">Profesional</SelectItem>
+                    <SelectItem value="Experto">Experto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="flex-1"
+                  onClick={() => setOpenFiltros(false)}
+                >
+                  Aplicar
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={limpiarFiltros}
+                >
+                  Limpiar
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+        <div className="flex justify-center items-center gap-4 mt-6">
+          <Button
+            onClick={() => {
+              setPagina((p) => p - 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            disabled={pagina === 1}
+          >
+            <ChevronLeft />
+          </Button>
+
+          <span className="text-sm">
+            Página {pagina} de {totalPaginas}
+          </span>
+
+          <Button
+            onClick={() => {
+              setPagina((p) => p + 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            disabled={pagina === totalPaginas}
+          >
+            <ChevronRight />
+          </Button>
         </div>
       </div>
     </DashboardLayout>

@@ -145,7 +145,7 @@ class AutoevaluacionEstudianteView(APIView):
 
             autoevaluaciones = Autoevaluacion.objects.filter(
                 estudiante_id=estudiante
-                )
+                ).order_by('-fecha')
             nombre_procedimiento = ""
 
             lista_autoevaluaciones = []
@@ -215,6 +215,48 @@ class AutoevaluacionEstudianteView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class UltimasAutoevaluacionesEstudianteView(APIView):
+    """
+    API Ultimas Autoevaluaciones
+    """
+    def get(self, request):
+        try:
+            user = request.user
+
+            if not user.groups.filter(name="Estudiante").exists():
+                return Response(
+                    {"detail": "Acceso prohibido (rol)"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            estudiante = user.estudiante
+
+            data = []
+
+            queryset = ProcedimientoAutoevaluacion.objects.filter(
+                autoevaluacion__estudiante_id=estudiante.id
+            ).select_related(
+                'autoevaluacion',
+                'autoevaluacion__profesor',
+                'procedimientos'
+            ).order_by('-autoevaluacion__id')[:3]
+
+            for item in queryset:
+
+                data.append({
+                    "id_autoevaluacion": item.autoevaluacion.id,
+                    "fecha": item.autoevaluacion.fecha,
+                    "nombre_profesor": f"{item.autoevaluacion.profesor.nombre_1} {item.autoevaluacion.profesor.nombre_2} {item.autoevaluacion.profesor.apellido_1} {item.autoevaluacion.profesor.apellido_2}",
+                    "nombre_procedimiento": item.procedimientos.nombre_p
+                })
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print("error", str(e))
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+                 
 class AutoevaluacionProfesorView(APIView):
     """
     API Autoevaluacion Profesor
@@ -243,7 +285,7 @@ class AutoevaluacionProfesorView(APIView):
             
             autoevaluaciones = Autoevaluacion.objects.filter(
                 profesor_id=profesor
-            )
+            ).order_by('-fecha')
             nombre_procedimiento = ""
 
             lista_autoevaluaciones = []

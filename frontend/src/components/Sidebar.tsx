@@ -18,15 +18,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
 
   const BASE_ROUTE = localStorage.getItem("ruta");
+  const ROLE = localStorage.getItem("rol");
 
-  const navItems = [
-    { label: "Dashboard", href: `${BASE_ROUTE}/dashboard`, icon: LayoutDashboard, },
-    { label: "My Portfolio", href: `${BASE_ROUTE}/portfolio`, icon: BookOpen },
-    { label: "Clinical Practice", href: `${BASE_ROUTE}/clinical-practice`, icon: Stethoscope },
-    { label: "Evaluations", href: `${BASE_ROUTE}/evaluations`, icon: ClipboardList },
-    { label: "Academic Progress", href: `${BASE_ROUTE}/academic-progress`, icon: TrendingUp },
-    { label: "Settings", href: `${BASE_ROUTE}/settings`, icon: Settings },
+  const allNavItems = [
+    { label: "Dashboard", href: `${BASE_ROUTE}/dashboard`, icon: LayoutDashboard, roles: ["Estudiante", "Profesor"]},
+    { label: "My Portfolio", href: `${BASE_ROUTE}/portfolio`, icon: BookOpen, roles: [] },
+    { label: "Clinical Practice", href: `${BASE_ROUTE}/clinical-practice`, icon: Stethoscope, roles: ["Estudiante", "Profesor"] },
+    { label: "Evaluations", href: `${BASE_ROUTE}/evaluations`, icon: ClipboardList, roles: ["Estudiante", "Profesor"] },
+    { label: "Academic Progress", href: `${BASE_ROUTE}/academic-progress`, icon: TrendingUp, roles: ["Estudiante", "Profesor"] },
+    { label: "Settings", href: `${BASE_ROUTE}/settings`, icon: Settings, roles: ["Profesor"] },
   ];
+
+  const navItems = allNavItems.filter(item =>
+    ROLE && item.roles.includes(ROLE)
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);

@@ -1,9 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import React from "react";
-import { toastSuccess, toastError } from "@/hooks/toast-sonner";
 import { authFetch } from "@/lib/authFetch";
-
 import {
   Table,
   TableHeader,
@@ -12,10 +10,11 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { sileo } from "sileo";
+import API_URL from "@/lib/config";
 
 interface Usuario {
   cedula_estudiante: number;
@@ -26,6 +25,7 @@ interface Usuario {
 
 export default function Settings_profesor() {
   const [estudiantes, setEstudiantes] = useState<Usuario[]>([]);
+  const [estadoProfesor, setEstadoProfesor] = React.useState<boolean>();
   const [search, setSearch] = useState("");
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [deshabilitar, SetDeshabilitar] = useState(false);
@@ -52,15 +52,27 @@ export default function Settings_profesor() {
 
     const cargarDatos = async () => {
       try {
-        const [estudianteRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/estudiante/"),
+        const [estudianteRes, estadoProfesorRes] = await Promise.all([
+          fetch(`${API_URL}/api/estudiante/`),
+          authFetch(`${API_URL}/api/validacionprofesor/`),
         ]);
 
         const estudianteData = await estudianteRes.json();
+        const estadoProfesorData = await estadoProfesorRes.json();
 
         setEstudiantes(estudianteData);
-      } catch (error) {
-        console.error(error);
+        setEstadoProfesor(
+          estadoProfesorData.estado === true ||
+            estadoProfesorData.estado === "true" ||
+            estadoProfesorData.estado === 1,
+        );
+      } catch {
+        sileo.error({
+          title: "Error",
+          description: "Ha ocurrido un problema conexion con el servidor",
+          duration: 3000,
+          position: "top-center",
+        });
       }
     };
     cargarDatos();
@@ -75,30 +87,37 @@ export default function Settings_profesor() {
     }));
 
     try {
-      const response = await authFetch(
-        `http://127.0.0.1:8000/api/estudiante/`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(listHabilitados),
+      const response = await authFetch(`${API_URL}/api/estudiante/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(listHabilitados),
+      });
       const data = await response.json();
       if (response.ok) {
-        toastSuccess(data.message);
+        sileo.success({
+          title: "Exitoso",
+          description: data.message,
+          duration: 5000,
+          position: "top-right",
+        });
         await new Promise((resolve) => setTimeout(resolve, 3000));
         window.location.reload();
       }
     } catch {
-      toastError("Error de conexión con el servidor");
+      sileo.error({
+        title: "Error",
+        description: "Ha ocurrido un problema conexion con el servidor",
+        duration: 3000,
+        position: "top-center",
+      });
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground mt-2">
@@ -106,104 +125,119 @@ export default function Settings_profesor() {
           </p>
         </div>
 
-        <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-96">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-            <h2 className="text-lg font-semibold">Estudiantes</h2>
+        <div className="bg-card rounded-2xl border shadow-sm">
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 p-6 border-b">
+            <div>
+              <h2 className="text-xl font-semibold">Estudiantes</h2>
+              <div className="mb-3 text-sm text-muted-foreground">
+  {seleccionados.length} seleccionados
+</div>
 
-            {/* Buscador */}
+{seleccionados.length > 0 && (
+  <div className="mb-4 text-sm">
+    <strong>Seleccionados:</strong>{" "}
+    {estudiantes
+      .filter((u) => seleccionados.includes(u.cedula_estudiante))
+      .map((u) => u.nombre)
+      .join(", ")}
+  </div>
+)}
+            </div>
+
             <Input
               type="text"
-              placeholder="Buscar por nombre o cedula..."
+              placeholder="Buscar por cedula o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-72 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-72"
             />
           </div>
 
-          {/* Info seleccionados */}
-          <div className="mb-2 text-sm text-gray-500">
-            {seleccionados.length} seleccionados
-          </div>
-
-          {/* Tabla */}
-          <div className="overflow-x-auto rounded border border-gray-300">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-100">
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead>Cedula</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Semestre</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {datosFiltrados.length > 0 ? (
-                  datosFiltrados.map((user) => (
-                    <TableRow
-                      key={user.cedula_estudiante}
-                      className={`transition hover:bg-gray-50 ${
-                        seleccionados.includes(user.cedula_estudiante)
-                          ? "bg-blue-50"
-                          : ""
-                      }`}
-                    >
-                      <TableCell>
-                        {!user.estado && (
-                          <Checkbox
-                            checked={seleccionados.includes(
-                              user.cedula_estudiante,
-                            )}
-                            onCheckedChange={() => {
-                              handleCheckboxChange(user);
-                            }}
-                          />
-                        )}
-                      </TableCell>
-
-                      <TableCell className="font-medium text-gray-700">
-                        {user.cedula_estudiante}
-                      </TableCell>
-
-                      <TableCell>{user.nombre}</TableCell>
-
-                      <TableCell>{user.semestre}</TableCell>
-
-                      <TableCell>
-                        <span
-                          className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-medium w-fit
-      ${user.estado ? "bg-gray-100 border border-gray-300 text-gray-600" : "bg-gray-100 border border-gray-300 text-gray-600"}
-    `}
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              user.estado ? "bg-green-500" : "bg-red-400"
-                            }`}
-                          ></span>
-
-                          {user.estado ? "Habilitado" : "Deshabilitado"}
-                        </span>
-                      </TableCell>
+          {/* TABLA */}
+          <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead>Cédula</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Semestre</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center py-6 text-gray-500"
-                    >
-                      No hay resultados
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
+                  </TableHeader>
+
+                  <TableBody>
+                    {datosFiltrados.length > 0 ? (
+                      datosFiltrados.map((user) => (
+                        <TableRow
+                          key={user.cedula_estudiante}
+                          className={`transition hover:bg-muted/40 ${
+                            seleccionados.includes(user.cedula_estudiante)
+                              ? "bg-primary/10"
+                              : ""
+                          }`}
+                        >
+                          <TableCell>
+                            {estadoProfesor && !user.estado && (
+                              <Checkbox
+                                checked={seleccionados.includes(
+                                  user.cedula_estudiante,
+                                )}
+                                onCheckedChange={() =>
+                                  handleCheckboxChange(user)
+                                }
+                              />
+                            )}
+                          </TableCell>
+
+                          <TableCell className="font-medium">
+                            {user.cedula_estudiante}
+                          </TableCell>
+
+                          <TableCell>{user.nombre}</TableCell>
+
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium
+                  ${
+                    user.estado
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "bg-red-50 text-red-700 border border-red-200"
+                  }`}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  user.estado ? "bg-green-500" : "bg-red-500"
+                                }`}
+                              />
+                              {user.estado ? "Habilitado" : "Deshabilitado"}
+                            </span>
+                          </TableCell>
+
+                          <TableCell>
+                            <span className="px-2 py-1 bg-muted rounded text-xs">
+                              {user.semestre}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-10 text-muted-foreground"
+                        >
+                          No hay resultados
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
             </Table>
           </div>
 
-          {/* Botón */}
-          <div className="flex justify-end mt-4">
+          {/* FOOTER */}
+          <div className="flex justify-between items-center p-4">
             <Button
               onClick={handleSubmitHabilitar}
               disabled={seleccionados.length === 0 || deshabilitar}

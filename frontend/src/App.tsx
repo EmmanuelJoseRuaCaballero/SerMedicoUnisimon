@@ -1,9 +1,9 @@
-import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/dashboard/Index";
 import NotFound from "./pages/dashboard/NotFound";
+import { Toaster } from "sileo";
 
 // Coordinador Practicas
 
@@ -23,14 +23,18 @@ import ClinicalPractice_estudiante from "./pages/roles/estudiante/ClinicalPracti
 import Portfolio_estudiante from "./pages/roles/estudiante/Portfolio-estudiante";
 import Dashboard_estudiante from "./pages/roles/estudiante/Dashboard-estudiante"; 
 
-import "./index.css";
-
 const queryClient = new QueryClient();
 
 export const App = () => (
   <QueryClientProvider client={queryClient}>  
     <TooltipProvider>
-      <Sonner position="top-right"/>
+      <Toaster
+        position="top-center"
+        options={{
+          fill: "#171717",
+          styles: { description: "text-white/75!"},
+        }}
+      />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

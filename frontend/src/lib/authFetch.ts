@@ -1,3 +1,5 @@
+import API_URL from "./config";
+
 const logout = () => {
   localStorage.clear();
   window.location.href = "/";
@@ -31,7 +33,7 @@ const refreshToken = async (): Promise<string | null> => {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/refresh/", {
+      const response = await fetch(`${API_URL}/refresh/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +72,6 @@ export const authFetch = async (url: string, options: any = {}) => {
     return Promise.reject("No token");
   }
 
-  // 🔥 VALIDAR ANTES DE HACER REQUEST
   if (isTokenExpired(token)) {
     token = await refreshToken();
 
@@ -87,8 +88,7 @@ export const authFetch = async (url: string, options: any = {}) => {
       Authorization: `Bearer ${token}`,
     },
   });
-
-  // 🔁 fallback por si expiró justo en ese momento
+  
   if (response.status === 401 || response.status === 403) {
     const newToken = await refreshToken();
 

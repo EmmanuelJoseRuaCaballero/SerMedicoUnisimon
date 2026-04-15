@@ -1,7 +1,14 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { toastError } from "@/hooks/toast-sonner";
 import React from "react";
 import { authFetch } from "@/lib/authFetch";
+import { sileo } from "sileo";
+import API_URL from "@/lib/config";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface Subopcion {
   nombre_subopcion: string;
@@ -38,13 +45,17 @@ export default function ClinicalPractice_estudiante() {
     const tableProcedimientos = async () => {
       try {
         const response = await authFetch(
-          "http://127.0.0.1:8000/api/tablaprocedimientos/estudiante/",
+          `${API_URL}/api/tablaprocedimientos/estudiante/`,
         );
         const data = await response.json();
         setTablaProcedimientos(data);
-        console.log(tablaProcedimientos);
       } catch {
-        toastError("Error de conexión con el servidor");
+        sileo.error({
+          title: "Error",
+          description: "Ha ocurrido un problema conexion con el servidor",
+          duration: 3000,
+          position: "top-center",
+        });
       }
     };
     tableProcedimientos();
@@ -61,85 +72,107 @@ export default function ClinicalPractice_estudiante() {
             Track your clinical practice hours and experiences
           </p>
         </div>
-        <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-96">
-          {tablaProcedimientos.length != 0 ? (
-            <div className="border rounded-xl overflow-hidden text-sm">
-              <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] bg-green-100 px-4 py-2 text-xs font-semibold">
-                <div>PROCEDIMIENTOS</div>
-                <div className="text-center">REAL</div>
-                <div className="text-center">SIMULADA</div>
-                <div className="text-center">LUGAR</div>
-                <div className="text-center">PROFESOR</div>
-              </div>
-
-              {tablaProcedimientos.map((proc, i) => (
-                <div key={i}>
-                  {/* Procedimientos */}
-                  <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] px-4 py-2 bg-muted/30 font-medium border-t">
-                    <div>{proc.nombre_procedimiento}</div>
-
-                    <div className="text-center">{proc.actividad_real}</div>
-
-                    <div className="text-center">{proc.actividad_simulada}</div>
-
-                    <div></div>
-                    <div></div>
+        <Accordion type="multiple" className="space-y-3">
+          {tablaProcedimientos.map((proc, i) => (
+            <AccordionItem
+              key={i}
+              value={`proc-${i}`}
+              className="border rounded-xl bg-card shadow-sm overflow-hidden"
+            >
+              {/* HEADER */}
+              <AccordionTrigger className="px-4 hover:no-underline">
+                <div className="flex w-full justify-between items-center">
+                  <div className="text-left">
+                    <p className="font-semibold">{proc.nombre_procedimiento}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Real: {proc.actividad_real} · Simulada:{" "}
+                      {proc.actividad_simulada}
+                    </p>
                   </div>
+                </div>
+              </AccordionTrigger>
 
-                  {/* Opciones */}
-                  {(proc.opciones ?? []).map((op, j) => (
-                    <React.Fragment key={j}>
-                      <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] px-4 py-2 border-t">
-                        <div className="pl-6">{op.nombre_opcion}</div>
-
-                        <div className="text-center">{op.actividad_real}</div>
-
-                        <div className="text-center">
-                          {op.actividad_simulada}
-                        </div>
-
-                        <div className="text-xs">
-                          {(op.lugares ?? []).join(", ")}
-                        </div>
-
-                        <div className="text-xs">
-                          {(op.profesores ?? []).join(", ")}
-                        </div>
+              {/* CONTENT */}
+              <AccordionContent className="px-0">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[700px]">
+                    <div className="border-t">
+                      {/* HEADER TABLA */}
+                      <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] bg-muted/40 px-4 py-2 text-xs font-semibold">
+                        <div>OPCIÓN / SUBOPCIÓN</div>
+                        <div className="text-center">REAL</div>
+                        <div className="text-center">SIMULADA</div>
+                        <div className="text-center">LUGAR</div>
+                        <div className="text-center">PROFESOR</div>
                       </div>
 
-                      {/* Subopciones */}
-                      {(op.subopciones ?? []).map((sub, k) => (
-                        <div
-                          key={k}
-                          className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] px-4 py-2 border-t"
-                        >
-                          <div className="pl-12">{sub.nombre_subopcion}</div>
+                      {/* OPCIONES */}
+                      {proc.opciones?.map((op, j) => (
+                        <React.Fragment key={j}>
+                          <div className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] px-4 py-3 border-t bg-background">
+                            <div className="pl-4 font-medium">
+                              {op.nombre_opcion}
+                            </div>
 
-                          <div className="text-center">
-                            {sub.actividad_real}
+                            <div className="text-center">
+                              {op.actividad_real}
+                            </div>
+                            <div className="text-center">
+                              {op.actividad_simulada}
+                            </div>
+
+                            <div className="text-xs">
+                              <ul className="list-disc list-inside space-y-1">
+                                {(op.lugares ?? []).map((lugar, i) => (
+                                  <li key={i}>{lugar}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="text-xs">
+                              <ul className="list-disc list-inside space-y-1">
+                                {(op.profesores ?? []).map((profesor, i) => (
+                                  <li key={i}>{profesor}</li>
+                                ))}
+                              </ul>
+                            </div>
                           </div>
 
-                          <div className="text-center">
-                            {sub.actividad_simulada}
-                          </div>
+                          {/* SUBOPCIONES */}
+                          {op.subopciones?.map((sub, k) => (
+                            <div
+                              key={k}
+                              className="grid grid-cols-[3fr_1fr_1fr_2fr_2fr] px-4 py-2 border-t bg-muted/20"
+                            >
+                              <div className="pl-10 text-sm text-muted-foreground">
+                                └ {sub.nombre_subopcion}
+                              </div>
 
-                          <div className="text-xs">
-                            {(sub.lugares ?? []).join(", ")}
-                          </div>
-                          <div className="text-xs">
-                            {(sub.profesores ?? []).join(", ")}
-                          </div>
-                        </div>
+                              <div className="text-center">
+                                {sub.actividad_real}
+                              </div>
+                              <div className="text-center">
+                                {sub.actividad_simulada}
+                              </div>
+
+                              <div className="text-xs">
+                                {(sub.lugares ?? []).join(", ")}
+                              </div>
+
+                              <div className="text-xs">
+                                {(sub.profesores ?? []).join(", ")}
+                              </div>
+                            </div>
+                          ))}
+                        </React.Fragment>
                       ))}
-                    </React.Fragment>
-                  ))}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p>No hay datos</p>
-          )}
-        </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
     </DashboardLayout>
   );

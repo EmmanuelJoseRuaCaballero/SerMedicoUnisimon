@@ -20,19 +20,19 @@ class ProcedimientosView(APIView):
                 500: Error interno del servidor
         """
         try:
-            procedimientos = Procedimientos.objects.all()
+            procedimientos = Procedimientos.objects.all().order_by("nombre_p")
 
             lista_procedimientos = []
             for procedimiento in procedimientos:
                 opcion_procedimientos = OpcionProcedimientos.objects.filter(
                     id_procedimientos=procedimiento
-                )
+                ).order_by("nombre_op")
 
                 lista_opcion_procedimientos = []
                 for opcion in opcion_procedimientos:
                     sub_opcion_procedimientos = SubOpcionProcedimientos.objects.filter(
                         id_opcion_procedimientos=opcion
-                    )
+                    ).order_by("nombre_sop")
 
                     lista_sub_opcion_procedimientos = []
                     for sub in sub_opcion_procedimientos:

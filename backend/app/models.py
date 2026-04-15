@@ -12,6 +12,9 @@ class Profesor(models.Model):
     apellido_1 = models.CharField(max_length=100)
     apellido_2 = models.CharField(max_length=100, null=True, blank=True)
 
+    estado = models.BooleanField(default=True)
+    curso = models.CharField(max_length=100)
+
     def __str__(self):
         return f"{self.nombre_1} {self.apellido_1}"
 

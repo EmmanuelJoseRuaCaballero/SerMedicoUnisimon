@@ -9,7 +9,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   const nombre = localStorage.getItem("nombre");
   
     return (
-      <nav className="fixed top-0 right-0 left-0 md:left-64 h-16 bg-white border-b border-border flex items-center px-4 md:px-6 shadow-sm transition-all">
+      <nav className="fixed top-0 right-0 left-0 md:left-64 h-16 bg-white border-b border-border flex items-center px-4 md:px-6 shadow-sm transition-all z-40">
         {/* LEFT SECTION */}
         <div className="flex items-center gap-4">
           {/* Hamburger (mobile only) */}
