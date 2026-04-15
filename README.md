@@ -65,6 +65,7 @@ npm install @radix-ui/react-popover
 npm install @radix-ui/react-checkbox
 npm install @radix-ui/react-dropdown-menu
 npm install @radix-ui/react-accordion
+npm install sileo
 
 # Graficas
 npm install recharts
